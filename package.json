@@ -4,10 +4,16 @@
   "private": true,
   "scripts": {
     "test": "vitest run --config tests/setup/vitest.config.ts",
-    "test:watch": "vitest --config tests/setup/vitest.config.ts"
+    "test:watch": "vitest --config tests/setup/vitest.config.ts",
+    "verify:cocos-preflight": "npm test && node tools/ci/verify-cocos-project.mjs",
+    "verify:cocos-build": "bash tools/ci/run-cocos-build.sh"
   },
   "devDependencies": {
     "typescript": "^5.8.3",
     "vitest": "^3.1.1"
-  }
+  },
+  "creator": {
+    "version": "3.8.8"
+  },
+  "uuid": "dca19cc6-55c4-4696-b496-cf5328e08804"
 }

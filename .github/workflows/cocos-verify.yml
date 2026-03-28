@@ -1,0 +1,82 @@
+name: Cocos Verify
+
+on:
+  pull_request:
+  push:
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    name: Preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run repo preflight verification
+        run: npm run verify:cocos-preflight
+
+  cocos-build:
+    name: Cocos Build Smoke
+    needs: preflight
+    runs-on:
+      - self-hosted
+      - macOS
+      - gui-capable
+      - cocos-3_8_8
+    timeout-minutes: 30
+    concurrency:
+      group: cocos-creator-gui-session
+      cancel-in-progress: false
+    env:
+      COCOS_CREATOR_APP: /Applications/Cocos/Creator/3.8.8/CocosCreator.app
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify pinned Cocos Creator installation
+        run: |
+          test -x "$COCOS_CREATOR_APP/Contents/MacOS/CocosCreator" || {
+            echo "Missing pinned Cocos Creator app: $COCOS_CREATOR_APP" >&2
+            exit 1
+          }
+
+      - name: Prepare isolated Cocos home
+        run: mkdir -p "$RUNNER_TEMP/cocos-home"
+
+      - name: Run authoritative Cocos build smoke
+        env:
+          HOME: ${{ runner.temp }}/cocos-home
+        run: npm run verify:cocos-build
+
+      - name: Upload Cocos build artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cocos-build-artifacts-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/cocos-build
+          if-no-files-found: warn
+          retention-days: 14

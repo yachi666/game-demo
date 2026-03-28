@@ -40,6 +40,7 @@
 - Create: `tests/ai/decide-property.test.ts`
 - Create: `tests/setup/vitest.config.ts`
 - Create: `tools/create-cocos-project.sh`
+- Create: `tmp/tsconfig.cocos.json`
 - Modify: `package.json`
 - Modify: `tsconfig.json`
 - Modify: `docs/README.md`
@@ -55,6 +56,7 @@
 - Create: `assets/`
 - Create: `settings/`
 - Create: `profiles/`
+- Create: `tmp/`
 
 - [ ] **Step 1: Copy the `empty-2d` Cocos template into the repository**
 
@@ -154,7 +156,7 @@ Update `tsconfig.json` to:
 
 ```json
 {
-  "extends": "./temp/tsconfig.cocos.json",
+  "extends": "./tmp/tsconfig.cocos.json",
   "compilerOptions": {
     "target": "ES2020",
     "module": "ESNext",
@@ -170,12 +172,14 @@ Update `tsconfig.json` to:
 }
 ```
 
+Note: `tmp/tsconfig.cocos.json` is part of the copied Cocos template baseline and must be committed with the initialized project rather than treated as a machine-local generated artifact.
+
 - [ ] **Step 7: Commit the initialized project baseline**
 
 Run:
 
 ```bash
-git add .creator .gitignore assets package.json package-lock.json profiles settings tests tools tsconfig.json
+git add .creator .gitignore assets package.json package-lock.json profiles settings tests tmp tools tsconfig.json
 git commit -m "Initialize Cocos project baseline"
 ```
 
@@ -1173,6 +1177,7 @@ Editor actions:
 - Assign all label, button, token, and tile references in the inspector.
 - Save the result as `assets/scenes/Battle.scene`.
 - Set `Battle.scene` as the default launch scene in project settings.
+- Preserve the current `assets/scenes/Battle.scene.meta` UUID `6d8fa4db-c84c-4c65-9490-29da8a5d74cd`. If the scene is recreated and that UUID changes, the CI verification contract and committed build config must be updated in the same change.
 
 - [ ] **Step 3: Run the editor and manually verify the battle loop**
 
@@ -1230,6 +1235,7 @@ Expected manual result:
 
 - the project reopens cleanly
 - `Battle.scene` is still the default launch scene
+- `assets/scenes/Battle.scene.meta` still preserves UUID `6d8fa4db-c84c-4c65-9490-29da8a5d74cd`, or the CI verification contract has been updated in the same change
 - one full match can be completed without deadlock
 
 - [ ] **Step 3: Update docs to mention the new runnable project surface**
@@ -1242,8 +1248,11 @@ Append to the appropriate project-facing doc:
 - Create or refresh the Cocos project baseline with `bash tools/create-cocos-project.sh`
 - Install JS dependencies with `npm install`
 - Run deterministic rules tests with `npm test`
+- Run repository preflight verification with `npm run verify:cocos-preflight` once the CI verification slice lands
+- Run the authoritative Cocos smoke build with `npm run verify:cocos-build` on a GUI-capable macOS machine with Cocos Creator `3.8.8`
 - Open the project in Cocos Creator with:
   `open -a /Applications/Cocos/Creator/3.8.8/CocosCreator.app /Users/lzn/.codex/worktrees/fe99/demo`
+- If `assets/scenes/Battle.scene.meta` UUID or the playable build target changes, update the committed CI build config in the same change
 ```
 
 - [ ] **Step 4: Commit the verification and doc updates**

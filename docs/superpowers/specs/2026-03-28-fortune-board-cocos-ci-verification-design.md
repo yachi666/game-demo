@@ -48,6 +48,15 @@ This design therefore separates validation into:
 - an authoritative Cocos command-line build smoke layer
 - evidence retention for debugging
 
+## Source Of Truth
+
+Until a later spec explicitly changes it, the canonical playable scene for this repository is:
+
+- scene asset path: `assets/scenes/Battle.scene`
+- scene asset UUID: `6d8fa4db-c84c-4c65-9490-29da8a5d74cd`
+
+Both verification layers must treat that scene identity as contract data, not as an inferred convenience.
+
 ## Success Criteria
 
 This CI verification design is successful when all of the following become true after implementation:
@@ -79,17 +88,21 @@ Those can be added later, but they are separate concerns from CI-grade import an
 
 This layer runs before any Cocos build. It is expected to be fast and deterministic.
 
+It is designed to run on a generic Node-capable CI runner and must not require a local Creator installation.
+
 It verifies:
 
 - deterministic rules tests via `npm test`
 - `Battle.scene` parses as valid JSON
 - required `.meta` files exist for scene-bound scripts
 - scene-referenced custom component class ids match the compressed UUIDs derived from their `.meta` UUIDs
+- the canonical playable scene UUID from `assets/scenes/Battle.scene.meta` is still `6d8fa4db-c84c-4c65-9490-29da8a5d74cd`
 - expected project baseline files exist:
   - `package.json`
   - `tsconfig.json`
   - `tmp/tsconfig.cocos.json`
-  - `settings/`
+  - `settings/v2/packages/engine.json`
+  - `profiles/v2/packages/scene.json`
   - `.creator/`
 
 This layer should fail fast with human-readable messages before invoking Cocos itself.
@@ -116,7 +129,11 @@ Reasoning:
 
 Every authoritative build attempt should preserve:
 
-- raw Cocos build log
+- wrapper-captured combined stdout/stderr log
+- raw Cocos build log when `logDest` is successfully created
+- copied editor-side temporary log if the wrapper can locate one
+- the immutable committed config copied into the artifact directory for reference
+- the per-run `config.effective.json` that Cocos actually consumed
 - exported build config JSON used for the run
 - command invocation metadata
 - build output directory listing
@@ -131,6 +148,8 @@ The authoritative runner must satisfy all of the following:
 - GUI-capable session with access to WindowServer
 - local installation of `Cocos Creator 3.8.8`
 - stable absolute path or environment variable for the editor binary
+- serialized execution so only one Cocos build uses the GUI session at a time
+- a dedicated logged-in user/session for the Cocos job, not an opportunistic shared desktop
 
 Recommended runner contract:
 
@@ -144,6 +163,8 @@ Preferred operational model:
 
 This spec assumes the runner is provisioned outside the repo. The repo should validate and fail clearly if the binary is missing.
 
+The runner contract also assumes there is no concurrently running Creator instance for the same user profile while CI is executing. Preventing `SingletonLock` and profile-migration contention is part of runner provisioning, not a repo concern.
+
 ## Build Configuration Strategy
 
 The CI pipeline must not depend on hand-maintained semicolon-heavy build strings as the primary build source of truth.
@@ -151,7 +172,7 @@ The CI pipeline must not depend on hand-maintained semicolon-heavy build strings
 Instead:
 
 - configure the build once in the Cocos Build Panel
-- export the Build Panel configuration JSON
+- export the Build Panel configuration JSON using the full task export that preserves project-setting-dependent fields
 - commit that exported JSON into the repository
 - use `configPath` in CI
 
@@ -167,6 +188,27 @@ Recommended committed file location:
 
 This path is only a recommendation; the exact file path should remain repo-local, descriptive, and version-controlled.
 
+The committed config is valid only if all of the following remain true:
+
+- `platform` is `web-desktop`
+- `startScene` is `6d8fa4db-c84c-4c65-9490-29da8a5d74cd`
+- `scenes` contains an entry for `assets/scenes/Battle.scene` with UUID `6d8fa4db-c84c-4c65-9490-29da8a5d74cd`
+
+If the playable scene changes in the future, updating the committed build config is part of the same change.
+
+## Effective Build Config Rule
+
+`configPath` remains the source of truth, but the wrapper must never mutate the committed JSON in place.
+
+The normative override mechanism is:
+
+1. copy the committed config JSON into the per-run artifact directory as `config.source.json`
+2. duplicate `config.source.json` as `config.effective.json`
+3. rewrite only the output-path-related fields needed in `config.effective.json` to isolate that run, starting with `buildPath`
+4. pass `config.effective.json`, not the committed file, through `configPath`
+
+This preserves the committed config as the canonical build contract while still preventing stale-output false greens on persistent runners.
+
 ## Commands Surface
 
 ### Preflight Command
@@ -180,8 +222,9 @@ That command should:
 1. run deterministic tests
 2. validate scene JSON
 3. validate script meta presence
-4. validate scene component class ids against compressed UUIDs
+4. validate scene component class ids against a repo-local deterministic UUID compression helper that matches the pinned Cocos serialization behavior for the normative test vectors in this spec
 5. validate required project baseline files
+6. validate that the committed build config still targets the canonical playable scene
 
 ### Authoritative Build Command
 
@@ -201,9 +244,14 @@ Wrapper responsibilities:
 - validate required environment variables
 - resolve project path
 - resolve config JSON path
-- choose deterministic log output location
+- validate that the committed config still targets `Battle.scene`
+- choose a per-run artifact directory and a per-run build output path
+- remove or recreate the chosen build output directory before invoking Cocos
+- write a wrapper-owned combined stdout/stderr log even if `logDest` is never created
 - invoke Cocos
-- normalize or explain exit codes
+- preserve `logDest` output when present
+- opportunistically copy editor temp logs when present
+- explain version-pinned exit codes
 - print paths to preserved logs on failure
 
 ## Pass/Fail Rules
@@ -217,21 +265,25 @@ The preflight layer passes only if:
 - all required meta files exist
 - all expected scene-bound custom component ids match their script meta UUIDs
 - required baseline project files exist
+- the committed build config still points at the canonical playable scene
 
 ### Authoritative Build Pass Conditions
 
 The authoritative build layer passes only if:
 
-- the Cocos process exits with official success code `36`
-- the expected output directory exists
+- the committed config still targets the canonical playable scene
+- the Cocos process exits with the repository's pinned Cocos `3.8.8` success code `36`
+- the expected output directory exists at the per-run path chosen by the wrapper
 - the output directory is non-empty
-- the build log does not contain known hard-failure signals such as:
+- none of the preserved logs that exist for the run contain known hard-failure signals such as:
   - `missing script`
-  - `deserialize`
+  - `deserialization error`
   - `import failed`
   - `build failed`
 
-Log scanning is secondary to the exit code, not a replacement for it.
+Exit code is primary. Log scanning is a post-success guardrail used only after a nominal success code is observed.
+
+For consistency, log scanning should normalize every preserved log that exists for the run to lowercase and perform fixed-string matching against the hard-failure markers listed in this spec.
 
 ### Failure Conditions
 
@@ -239,23 +291,41 @@ The authoritative build must fail if any of the following occur:
 
 - editor binary missing
 - config JSON missing
+- config JSON does not include `Battle.scene` in `scenes`
+- config JSON does not set `startScene` to `6d8fa4db-c84c-4c65-9490-29da8a5d74cd`
 - process exits with `32`
 - process exits with `34`
 - process exits with any unexpected non-success code
 - build output missing after a nominally successful invocation
+- log scanning finds a hard-failure marker after a nominally successful invocation
+
+### Exit Code Contract
+
+This repository treats the Cocos command exit code contract as version-pinned behavior for Creator `3.8.8`, not as a cross-version invariant:
+
+- `36` means the build step completed successfully for this repository's pinned Creator version
+- `32` and `34` are treated as known failure/early-exit codes for this pinned version
+- any other non-`36` exit code is a failure
+
+When the wrapper reports failure, it must print both the raw exit code and the artifact paths so future Creator upgrades can revisit this contract with evidence.
 
 ## Logging And Evidence
 
 The design assumes that build logs are the primary debugging artifact for CI failures.
 
-The wrapper must always write logs to a deterministic path, for example:
+The wrapper must always write its own combined process log to a deterministic artifact path, for example:
 
-- `artifacts/cocos-build/build.log`
+- `artifacts/cocos-build/command.log`
+
+`logDest` output from Cocos is still requested and preserved when present, but it must be treated as best-effort rather than the only guaranteed log source because early configuration failures can terminate before that file is created.
 
 Recommended retained artifacts:
 
-- `artifacts/cocos-build/build.log`
-- `artifacts/cocos-build/config.json`
+- `artifacts/cocos-build/command.log`
+- `artifacts/cocos-build/cocos-log.txt`
+- `artifacts/cocos-build/editor-log.txt`
+- `artifacts/cocos-build/config.source.json`
+- `artifacts/cocos-build/config.effective.json`
 - `artifacts/cocos-build/output-tree.txt`
 - `artifacts/cocos-build/command.txt`
 
@@ -276,9 +346,21 @@ Responsibilities:
 - parse `Battle.scene`
 - find scene custom component ids
 - read relevant `.ts.meta` files
-- compress UUIDs using the same algorithm Cocos uses for component class ids
+- use a repo-local deterministic UUID compression helper for component class id comparison
 - compare expected and actual ids
 - validate required project files
+- validate that the committed build config still targets the canonical playable scene
+
+Normative current-repo example:
+
+- `assets/scripts/ui/BattleController.ts.meta` UUID `8d77e944-c80d-434d-a4f6-18ca01c62a70`
+- corresponding serialized component id in `assets/scenes/Battle.scene`: `8d77elEyA1DTaT2GMoBxipw`
+- official Cocos example from the pinned local Builder type declarations:
+  - `fc991dd7-0033-4b80-9d41-c8a86a702e59` -> `fc9913XADNLgJ1ByKhqcC5Z`
+
+Optional maintenance check:
+
+- on a Creator-capable machine, a non-blocking maintainer script may compare the repo-local helper output against Cocos `3.8.8` `IBuild.Utils.compressUuid`
 
 ### `tools/ci/run-cocos-build.sh`
 
@@ -290,7 +372,9 @@ Responsibilities:
 
 - resolve editor binary
 - invoke build with `configPath`
-- capture logs
+- capture wrapper-owned logs
+- capture `logDest` output when present
+- isolate per-run output paths so stale artifacts cannot false-green the job
 - preserve artifact paths
 - exit with CI-friendly failure semantics
 
@@ -303,6 +387,8 @@ Purpose:
 Responsibilities:
 
 - encode the build panel configuration actually used by CI
+- explicitly include `Battle.scene` in `scenes`
+- explicitly set `startScene` to `Battle.scene`
 
 ### CI Workflow File
 
@@ -351,6 +437,16 @@ Mitigation:
 
 - treat the committed exported config as the canonical CI build contract
 - require updating it intentionally when build settings change
+- fail preflight if the committed config no longer points at the canonical playable scene
+
+### Stale Artifact False Positives
+
+Persistent runners can retain previous output directories. A naive "directory exists and is non-empty" check can therefore produce a false green.
+
+Mitigation:
+
+- use a unique per-run build output path under the wrapper-controlled artifact root, or delete and recreate the configured output directory before each build
+- list the produced output tree from that per-run path only
 
 ### False Confidence From Preflight Alone
 
@@ -365,10 +461,10 @@ Mitigation:
 
 The implementation should be staged:
 
-1. Add repository preflight script and expose it through npm.
-2. Add committed exported build config file.
-3. Add Cocos build wrapper script.
-4. Add macOS GUI-capable CI workflow.
+1. Add the committed exported build config file.
+2. Add the repository preflight script and expose it through npm.
+3. Add the Cocos build wrapper script with effective-config rewriting and artifact capture.
+4. Add the macOS GUI-capable CI workflow.
 5. Tune artifact retention and log scanning based on first failures.
 
 This rollout keeps the first merge small while still moving toward the authoritative build goal quickly.
@@ -381,3 +477,4 @@ The following choices are fixed and should not be re-debated during implementati
 - Use `configPath` rather than manually curated CLI build strings as the primary CI build input.
 - Use a GUI-capable macOS runner for the authoritative build layer.
 - Keep manual visual/editor QA separate from CI import/build verification.
+- Treat `assets/scenes/Battle.scene` and UUID `6d8fa4db-c84c-4c65-9490-29da8a5d74cd` as the current playable-scene contract.

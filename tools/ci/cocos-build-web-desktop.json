@@ -1,0 +1,55 @@
+{
+  "__version__": "3.8.8",
+  "name": "fortune-board-web-desktop",
+  "taskName": "fortune-board-web-desktop",
+  "platform": "web-desktop",
+  "scenes": [
+    {
+      "url": "db://assets/scenes/Battle.scene",
+      "uuid": "6d8fa4db-c84c-4c65-9490-29da8a5d74cd"
+    }
+  ],
+  "skipCompressTexture": false,
+  "sourceMaps": false,
+  "experimentalEraseModules": false,
+  "bundleCommonChunk": true,
+  "startScene": "6d8fa4db-c84c-4c65-9490-29da8a5d74cd",
+  "buildPath": "build/cocos/web-desktop",
+  "debug": true,
+  "mangleProperties": false,
+  "inlineEnum": true,
+  "inlineSpriteFrames": true,
+  "md5Cache": false,
+  "mainBundleCompressionType": "none",
+  "mainBundleIsRemote": false,
+  "useBuiltinServer": false,
+  "startSceneAssetBundle": false,
+  "moveRemoteBundleScript": false,
+  "customLayers": [],
+  "sortingLayers": [],
+  "designResolution": {
+    "width": 960,
+    "height": 640,
+    "policy": 4
+  },
+  "splashScreen": {
+    "displayRatio": 0.4,
+    "totalTime": 0,
+    "watermarkLocation": "default",
+    "autoFit": true,
+    "logo": {
+      "type": "default"
+    },
+    "background": {
+      "type": "default"
+    }
+  },
+  "outputName": "fortune-board-web-desktop",
+  "resolution": {
+    "width": 960,
+    "height": 640,
+    "policy": 4
+  },
+  "packages": {},
+  "nativeCodeBundleMode": "both"
+}

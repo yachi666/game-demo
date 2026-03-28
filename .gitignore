@@ -7,7 +7,13 @@
 /temp/
 /local/
 /build/
-/profiles/
+/artifacts/
+/profiles/*
+!/profiles/v2/
+/profiles/v2/*
+!/profiles/v2/packages/
+/profiles/v2/packages/*
+!/profiles/v2/packages/scene.json
 /native/engine/android/**/*/assets
 
 #//////////////////////////
