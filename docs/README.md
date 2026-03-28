@@ -15,6 +15,14 @@ When adding, moving, or replacing documentation, update this file in the same ch
 
 - [Superpowers Docs](./superpowers/README.md): validated design specs and execution plans for implementation work.
 
+## Local Development
+
+- Create or refresh the Cocos project baseline with `bash tools/create-cocos-project.sh`
+- Install JS dependencies with `npm install`
+- Run deterministic rules tests with `npm test`
+- Open the project in Cocos Creator with:
+  `open -a /Applications/Cocos/Creator/3.8.8/CocosCreator.app /Users/lzn/.codex/worktrees/fe99/demo`
+
 ## Index Rules
 
 - Add every durable document in `docs/` to this index with a one-line description.

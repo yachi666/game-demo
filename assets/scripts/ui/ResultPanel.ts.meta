@@ -1,0 +1,13 @@
+{
+  "ver": "4.0.23",
+  "importer": "typescript",
+  "imported": true,
+  "uuid": "c44bcb7c-2bd2-4f65-b8d5-2f1559c7e6f8",
+  "files": [],
+  "subMetas": {},
+  "userData": {
+    "moduleId": "project:///assets/scripts/ui/ResultPanel.js",
+    "importerSettings": 7,
+    "simulateGlobals": []
+  }
+}

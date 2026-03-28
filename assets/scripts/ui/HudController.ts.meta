@@ -1,0 +1,13 @@
+{
+  "ver": "4.0.23",
+  "importer": "typescript",
+  "imported": true,
+  "uuid": "a5c50ef2-2510-4b5e-8bd1-4f038837a661",
+  "files": [],
+  "subMetas": {},
+  "userData": {
+    "moduleId": "project:///assets/scripts/ui/HudController.js",
+    "importerSettings": 7,
+    "simulateGlobals": []
+  }
+}
