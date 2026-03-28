@@ -8,7 +8,7 @@ This folder contains validated delivery documents that turn approved product dir
 
 ## Plans
 
-- `plans/`: implementation plans created after a spec is approved and reviewed.
+- [Plans Index](./plans/README.md): implementation plans created after a spec is approved and reviewed.
 
 ## Maintenance Rules
 
