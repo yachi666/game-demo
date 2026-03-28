@@ -1,0 +1,13 @@
+{
+  "name": "fortune-board",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "test": "vitest run --config tests/setup/vitest.config.ts",
+    "test:watch": "vitest --config tests/setup/vitest.config.ts"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.1"
+  }
+}
