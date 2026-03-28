@@ -1,0 +1,12 @@
+# Specs Index
+
+This index tracks approved design specifications that are ready for implementation planning.
+
+## Documents
+
+- [Fortune Board First Playable MVP Design](./2026-03-28-fortune-board-first-playable-mvp-design.md): design for the first real Cocos Creator playable slice covering the board loop, HUD, and minimal AI flow.
+
+## Maintenance Rules
+
+- Add every durable spec in this folder with a one-line summary.
+- Mark replaced or superseded specs clearly and link to the newer canonical document.

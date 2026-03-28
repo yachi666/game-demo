@@ -11,6 +11,10 @@ When adding, moving, or replacing documentation, update this file in the same ch
 
 - [Research Docs](./research/README.md): research and technical evaluation notes that support delivery decisions.
 
+## Delivery
+
+- [Superpowers Docs](./superpowers/README.md): validated design specs and execution plans for implementation work.
+
 ## Index Rules
 
 - Add every durable document in `docs/` to this index with a one-line description.
