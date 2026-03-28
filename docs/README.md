@@ -14,6 +14,7 @@ When adding, moving, or replacing documentation, update this file in the same ch
 ## Delivery
 
 - [Superpowers Docs](./superpowers/README.md): validated design specs and execution plans for implementation work.
+- [Fortune Board Cocos CI Verification Design](./superpowers/specs/2026-03-28-fortune-board-cocos-ci-verification-design.md): approved design for automated Cocos import/build verification in CI using a GUI-capable macOS runner.
 
 ## Local Development
 
