@@ -1,5 +1,21 @@
 # Repository Guidelines
 
+## Superpowers Skills
+This repository expects agents to use the available superpowers skills deliberately instead of treating them as optional reference material.
+
+- Check whether a skill applies before responding, asking clarifying questions, exploring files, or making changes.
+- If a relevant skill exists, invoke and follow it before taking action. Re-read the current skill definition instead of relying on memory.
+- Follow priority in this order: direct user instructions and this `AGENTS.md`, then superpowers skills, then default assistant behavior.
+- When multiple skills apply, use process skills first, such as brainstorming or debugging, and then use implementation skills for the actual code or content changes.
+- If a skill turns out not to fit after invocation, state that briefly and continue with the next best applicable workflow.
+- For this repository in particular, prefer these defaults:
+  - `using-superpowers` at the start of work to decide whether other skills should be activated
+  - `brainstorming` before creative feature work, new gameplay ideas, or behavior changes
+  - `writing-plans` before larger multi-step implementations or doc restructures
+  - `systematic-debugging` when investigating bugs, regressions, or unexpected runtime behavior
+  - `test-driven-development` when adding or changing implementation code
+  - `verification-before-completion` before claiming a task is done, fixed, or ready to ship
+
 ## Project Structure & Module Organization
 This repository already contains product and technical documentation and is expected to grow into a `Cocos Creator + TypeScript` iOS game project. Keep the root minimal and introduce structure deliberately around that workflow:
 
