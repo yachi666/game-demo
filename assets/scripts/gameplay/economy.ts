@@ -18,3 +18,11 @@ export function getAssetTotal(match: MatchState, playerIndex: number): number {
 
   return player.cash + ownedValue;
 }
+
+export function applyCostDiscount(cost: number, discount: number): number {
+  return Math.max(0, cost - discount);
+}
+
+export function applyTollBoost(toll: number, boost: number): number {
+  return Math.max(0, toll + boost);
+}

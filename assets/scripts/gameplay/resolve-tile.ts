@@ -1,7 +1,8 @@
 import { appendLog } from '../core/logger';
 import type { MatchState } from '../core/types';
 import { assertDefined } from '../utils/assert';
-import { getTileAt } from './economy';
+import { applyCostDiscount, applyTollBoost, getTileAt } from './economy';
+import { consumeStatusEffect } from './status-effects';
 
 type PropertyDecision = { type: 'buy' } | { type: 'skip' };
 
@@ -27,7 +28,19 @@ export function resolveTileForPlayer(
 
   if (tile.type === 'penalty') {
     const penalty = tile.penaltyAmount ?? 0;
-    const nextMatch = structuredClone(match);
+    const shieldResult = consumeStatusEffect(match, player.id, 'shieldPenaltyOrToll');
+    if (shieldResult.effect) {
+      const shieldedMatch = structuredClone(shieldResult.match);
+      shieldedMatch.logs = appendLog(
+        shieldedMatch.logs,
+        shieldedMatch.turn,
+        shieldedMatch.phase,
+        `${player.label} blocked penalty ${penalty}`,
+      );
+      return { match: shieldedMatch, requiresPropertyDecision: false };
+    }
+
+    const nextMatch = structuredClone(shieldResult.match);
     const nextPlayer = assertDefined(nextMatch.players[playerIndex], `Missing player at index ${playerIndex}`);
     nextPlayer.cash -= penalty;
     if (nextPlayer.cash < 0) {
@@ -47,9 +60,11 @@ export function resolveTileForPlayer(
       return { match, requiresPropertyDecision: true };
     }
 
-    const nextMatch = structuredClone(match);
+    const discountResult = consumeStatusEffect(match, player.id, 'discountNextProperty');
+    const nextMatch = structuredClone(discountResult.match);
     const nextPlayer = assertDefined(nextMatch.players[playerIndex], `Missing player at index ${playerIndex}`);
-    nextPlayer.cash -= tile.purchaseCost ?? 0;
+    const purchaseCost = applyCostDiscount(tile.purchaseCost ?? 0, discountResult.effect?.amount ?? 0);
+    nextPlayer.cash -= purchaseCost;
     assertDefined(
       nextMatch.properties.find((entry) => entry.tileId === tile.id),
       `Missing property state for tile ${tile.id}`,
@@ -59,8 +74,21 @@ export function resolveTileForPlayer(
   }
 
   if (property.ownerId !== player.id) {
-    const nextMatch = structuredClone(match);
-    const toll = tile.tollCost ?? 0;
+    const shieldResult = consumeStatusEffect(match, player.id, 'shieldPenaltyOrToll');
+    if (shieldResult.effect) {
+      const shieldedMatch = structuredClone(shieldResult.match);
+      shieldedMatch.logs = appendLog(
+        shieldedMatch.logs,
+        shieldedMatch.turn,
+        shieldedMatch.phase,
+        `${player.label} blocked toll ${tile.tollCost ?? 0}`,
+      );
+      return { match: shieldedMatch, requiresPropertyDecision: false };
+    }
+
+    const boostResult = consumeStatusEffect(shieldResult.match, property.ownerId, 'boostNextToll');
+    const nextMatch = structuredClone(boostResult.match);
+    const toll = applyTollBoost(tile.tollCost ?? 0, boostResult.effect?.amount ?? 0);
     const nextPlayer = assertDefined(nextMatch.players[playerIndex], `Missing player at index ${playerIndex}`);
     const ownerIndex = nextMatch.players.findIndex((candidate) => candidate.id === property.ownerId);
     const owner = assertDefined(
@@ -78,7 +106,12 @@ export function resolveTileForPlayer(
       );
     }
 
-    nextMatch.logs = appendLog(nextMatch.logs, nextMatch.turn, nextMatch.phase, `${player.label} paid toll ${toll}`);
+    nextMatch.logs = appendLog(
+      nextMatch.logs,
+      nextMatch.turn,
+      nextMatch.phase,
+      `${player.label} paid toll ${toll}`,
+    );
     return { match: nextMatch, requiresPropertyDecision: false };
   }
 

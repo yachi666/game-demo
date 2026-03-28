@@ -1,0 +1,13 @@
+{
+  "ver": "4.0.24",
+  "importer": "typescript",
+  "imported": true,
+  "uuid": "8af5fcc0-6f09-4a1e-a30a-b268d336d99a",
+  "files": [],
+  "subMetas": {},
+  "userData": {
+    "moduleId": "project:///assets/scripts/data/card-config.js",
+    "importerSettings": 7,
+    "simulateGlobals": []
+  }
+}

@@ -1,5 +1,6 @@
 import { _decorator, Component, Label } from 'cc';
 import type { MatchState } from '../core/types';
+import { ROLE_DEFINITIONS } from '../data/role-config';
 import { getAssetTotal } from '../gameplay/economy';
 
 const { ccclass, property } = _decorator;
@@ -19,6 +20,12 @@ export class HudController extends Component {
   public turnLabel: Label | null = null;
 
   @property(Label)
+  public roleLabel: Label | null = null;
+
+  @property(Label)
+  public cardCountLabel: Label | null = null;
+
+  @property(Label)
   public logLabel: Label | null = null;
 
   public render(match: MatchState): void {
@@ -35,6 +42,13 @@ export class HudController extends Component {
     }
     if (this.turnLabel) {
       this.turnLabel.string = `Turn: ${match.turn}`;
+    }
+    if (this.roleLabel) {
+      const roleLabel = ROLE_DEFINITIONS.find((role) => role.id === activePlayer.roleId)?.label ?? 'Unassigned';
+      this.roleLabel.string = `Role: ${roleLabel}`;
+    }
+    if (this.cardCountLabel) {
+      this.cardCountLabel.string = `Cards: ${activePlayer.hand.length}`;
     }
     if (this.logLabel) {
       this.logLabel.string = match.logs.slice(-6).map((entry) => entry.message).join('\n');

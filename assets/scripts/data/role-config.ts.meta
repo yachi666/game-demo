@@ -1,0 +1,13 @@
+{
+  "ver": "4.0.24",
+  "importer": "typescript",
+  "imported": true,
+  "uuid": "f1796ec0-ccb7-4181-aa93-8159efbf9432",
+  "files": [],
+  "subMetas": {},
+  "userData": {
+    "moduleId": "project:///assets/scripts/data/role-config.js",
+    "importerSettings": 7,
+    "simulateGlobals": []
+  }
+}

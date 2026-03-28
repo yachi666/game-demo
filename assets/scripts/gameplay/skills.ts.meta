@@ -1,0 +1,13 @@
+{
+  "ver": "4.0.24",
+  "importer": "typescript",
+  "imported": true,
+  "uuid": "ad7df74a-f4fb-41a3-89a5-b89a361741bf",
+  "files": [],
+  "subMetas": {},
+  "userData": {
+    "moduleId": "project:///assets/scripts/gameplay/skills.js",
+    "importerSettings": 7,
+    "simulateGlobals": []
+  }
+}

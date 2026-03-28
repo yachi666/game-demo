@@ -1,0 +1,13 @@
+{
+  "ver": "4.0.24",
+  "importer": "typescript",
+  "imported": true,
+  "uuid": "f94ef1c5-6ced-4b3a-abb4-bfe8e0393452",
+  "files": [],
+  "subMetas": {},
+  "userData": {
+    "moduleId": "project:///assets/scripts/gameplay/status-effects.js",
+    "importerSettings": 7,
+    "simulateGlobals": []
+  }
+}

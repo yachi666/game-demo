@@ -1,12 +1,5 @@
 import { GamePhase } from './phases';
-import type { MatchState, PlayerConfig, TileConfig } from './types';
-
-interface MatchConfig {
-  players: PlayerConfig[];
-  startingCash: number;
-  startBonus: number;
-  assetTarget: number;
-}
+import type { MatchConfig, MatchState, TileConfig } from './types';
 
 export function createMatch(board: TileConfig[], config: MatchConfig): MatchState {
   return {
@@ -16,6 +9,10 @@ export function createMatch(board: TileConfig[], config: MatchConfig): MatchStat
     board,
     players: config.players.map((player) => ({
       ...player,
+      roleId: null,
+      hand: [],
+      hasUsedCardThisTurn: false,
+      hasUsedSkillThisTurn: false,
       position: 0,
       cash: config.startingCash,
       isBankrupt: false,
@@ -27,6 +24,11 @@ export function createMatch(board: TileConfig[], config: MatchConfig): MatchStat
         ownerId: null,
       })),
     logs: [],
+    drawPile: [...config.starterDeckCardIds],
+    discardPile: [],
+    availableRoleIds: [...config.availableRoleIds],
+    requiresRoleSelection: true,
+    statusEffects: [],
     startBonus: config.startBonus,
     assetTarget: config.assetTarget,
   };

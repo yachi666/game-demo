@@ -1,0 +1,13 @@
+{
+  "ver": "4.0.24",
+  "importer": "typescript",
+  "imported": true,
+  "uuid": "db8c3f8c-672e-4dc8-adf4-f9e054778e3e",
+  "files": [],
+  "subMetas": {},
+  "userData": {
+    "moduleId": "project:///assets/scripts/ai/decide-skill.js",
+    "importerSettings": 7,
+    "simulateGlobals": []
+  }
+}

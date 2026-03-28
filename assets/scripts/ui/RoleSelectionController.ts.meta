@@ -1,0 +1,13 @@
+{
+  "ver": "4.0.24",
+  "importer": "typescript",
+  "imported": true,
+  "uuid": "d6037aaa-ff37-455e-a0d0-40fbc2463786",
+  "files": [],
+  "subMetas": {},
+  "userData": {
+    "moduleId": "project:///assets/scripts/ui/RoleSelectionController.js",
+    "importerSettings": 7,
+    "simulateGlobals": []
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "ver": "4.0.24",
+  "importer": "typescript",
+  "imported": true,
+  "uuid": "f35c31ff-c948-45a0-adc4-6e6d58ebba73",
+  "files": [],
+  "subMetas": {},
+  "userData": {
+    "moduleId": "project:///assets/scripts/gameplay/cards.js",
+    "importerSettings": 7,
+    "simulateGlobals": []
+  }
+}

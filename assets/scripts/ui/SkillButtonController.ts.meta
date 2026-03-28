@@ -1,0 +1,13 @@
+{
+  "ver": "4.0.24",
+  "importer": "typescript",
+  "imported": true,
+  "uuid": "5bcc1092-3900-48ff-8aca-a6807360cdf4",
+  "files": [],
+  "subMetas": {},
+  "userData": {
+    "moduleId": "project:///assets/scripts/ui/SkillButtonController.js",
+    "importerSettings": 7,
+    "simulateGlobals": []
+  }
+}

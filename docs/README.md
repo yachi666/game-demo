@@ -18,6 +18,7 @@ When adding, moving, or replacing documentation, update this file in the same ch
 - [Fortune Board First Playable MVP Implementation Plan](./superpowers/plans/2026-03-28-fortune-board-first-playable-mvp.md): implemented execution record for initializing the real Cocos project and shipping the first playable board loop.
 - [Fortune Board Cocos CI Verification Design](./superpowers/specs/2026-03-28-fortune-board-cocos-ci-verification-design.md): approved design for automated Cocos import/build verification in CI using a GUI-capable macOS runner.
 - [Fortune Board Cocos CI Verification Implementation Plan](./superpowers/plans/2026-03-28-fortune-board-cocos-ci-verification-implementation-plan.md): task-by-task plan for wiring generic preflight checks, an authoritative build wrapper, and CI workflow coverage.
+- [Fortune Board Cards And Skills Alpha Implementation Plan](./superpowers/plans/2026-03-28-fortune-board-cards-skills-alpha.md): next-iteration plan for adding deterministic cards, role skills, and AI usage on top of the first playable Battle scene.
 
 ## Local Development
 

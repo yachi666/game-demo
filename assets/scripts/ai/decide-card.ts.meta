@@ -1,0 +1,13 @@
+{
+  "ver": "4.0.24",
+  "importer": "typescript",
+  "imported": true,
+  "uuid": "0a6f5238-f740-4f57-a7ef-cc7af108e7b2",
+  "files": [],
+  "subMetas": {},
+  "userData": {
+    "moduleId": "project:///assets/scripts/ai/decide-card.js",
+    "importerSettings": 7,
+    "simulateGlobals": []
+  }
+}

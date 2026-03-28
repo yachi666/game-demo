@@ -1,0 +1,13 @@
+{
+  "ver": "4.0.24",
+  "importer": "typescript",
+  "imported": true,
+  "uuid": "e7ca08b7-4691-43fa-811e-69f6952236c0",
+  "files": [],
+  "subMetas": {},
+  "userData": {
+    "moduleId": "project:///assets/scripts/core/turn-flow.js",
+    "importerSettings": 7,
+    "simulateGlobals": []
+  }
+}

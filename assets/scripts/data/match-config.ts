@@ -1,10 +1,8 @@
-import type { PlayerConfig } from '../core/types';
+import type { MatchConfig as MatchConfigType } from '../core/types';
+import { ROLE_DEFINITIONS } from './role-config';
+import { STARTER_CARD_DEFINITIONS } from './card-config';
 
-export const MATCH_CONFIG: {
-  players: PlayerConfig[];
-  startingCash: number;
-  startBonus: number;
-  assetTarget: number;
+export const MATCH_CONFIG: MatchConfigType & {
   aiReserveCash: number;
 } = {
   players: [
@@ -16,5 +14,7 @@ export const MATCH_CONFIG: {
   startingCash: 400,
   startBonus: 100,
   assetTarget: 650,
+  starterDeckCardIds: STARTER_CARD_DEFINITIONS.map((card) => card.id),
+  availableRoleIds: ROLE_DEFINITIONS.map((role) => role.id),
   aiReserveCash: 150,
 };

@@ -14,6 +14,7 @@ This folder contains validated delivery documents that turn approved product dir
 
 - The first playable Fortune Board MVP is implemented in this repository as a runnable Cocos Creator 3.8.8 project baseline with deterministic rules, simple AI, a battle scene, and Vitest-driven gameplay coverage.
 - The Cocos CI verification design is now implemented as a repo-local preflight verifier, an authoritative Cocos build wrapper, and a GitHub Actions workflow for macOS GUI build validation.
+- The next planned gameplay iteration is a cards-and-skills alpha slice that adds role differentiation and comeback tools without leaving the current single-scene Battle loop.
 
 ## Current CI Verification Contract
 
