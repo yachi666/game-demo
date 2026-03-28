@@ -12,7 +12,7 @@ This folder contains validated delivery documents that turn approved product dir
 
 ## Current Delivery Surface
 
-- The first playable Fortune Board MVP plan is backed by a runnable Cocos Creator 3.8.8 project baseline plus Vitest-driven deterministic rules coverage in this repository.
+- The first playable Fortune Board MVP is implemented in this repository as a runnable Cocos Creator 3.8.8 project baseline with deterministic rules, simple AI, a battle scene, and Vitest-driven gameplay coverage.
 - The Cocos CI verification design is now implemented as a repo-local preflight verifier, an authoritative Cocos build wrapper, and a GitHub Actions workflow for macOS GUI build validation.
 
 ## Current CI Verification Contract

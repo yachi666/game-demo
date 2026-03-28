@@ -2,6 +2,16 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+## Document Info
+
+- Project: `fortune-board`
+- Document type: implementation plan
+- Status: implemented
+- Date: `2026-03-28`
+- Related commits: `4c63c21`, `801546d`, `54bf698`
+
+This document is retained as the original execution record for the first playable slice. The detailed checkbox steps below are historical planning content, not a live progress tracker.
+
 **Goal:** Initialize a real Cocos Creator 3.8.8 project in this repository and deliver the first playable board-game slice with deterministic rules, simple AI, a battle scene, and a minimal HUD.
 
 **Architecture:** Use the built-in `empty-2d` Cocos template as the project base, then keep custom code inside `assets/scripts` with a strict split between deterministic rules and scene/presentation adapters. The `Battle` scene is the default entry point, while gameplay state lives in plain TypeScript modules that can be tested outside the editor runtime.

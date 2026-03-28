@@ -15,7 +15,7 @@ When adding, moving, or replacing documentation, update this file in the same ch
 
 - [Superpowers Docs](./superpowers/README.md): validated design specs and execution plans for implementation work.
 - [Fortune Board First Playable MVP Design](./superpowers/specs/2026-03-28-fortune-board-first-playable-mvp-design.md): approved design for the first playable Cocos board-game slice.
-- [Fortune Board First Playable MVP Implementation Plan](./superpowers/plans/2026-03-28-fortune-board-first-playable-mvp.md): execution plan for initializing the real Cocos project and shipping the first playable board loop.
+- [Fortune Board First Playable MVP Implementation Plan](./superpowers/plans/2026-03-28-fortune-board-first-playable-mvp.md): implemented execution record for initializing the real Cocos project and shipping the first playable board loop.
 - [Fortune Board Cocos CI Verification Design](./superpowers/specs/2026-03-28-fortune-board-cocos-ci-verification-design.md): approved design for automated Cocos import/build verification in CI using a GUI-capable macOS runner.
 - [Fortune Board Cocos CI Verification Implementation Plan](./superpowers/plans/2026-03-28-fortune-board-cocos-ci-verification-implementation-plan.md): task-by-task plan for wiring generic preflight checks, an authoritative build wrapper, and CI workflow coverage.
 
