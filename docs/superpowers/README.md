@@ -5,10 +5,13 @@ This folder contains validated delivery documents that turn approved product dir
 ## Specs
 
 - [Specs Index](./specs/README.md): approved design documents for concrete implementation slices.
+- [Fortune Board City Park Map Rework Design](./specs/2026-03-28-fortune-board-city-park-map-rework-design.md): proposed design for upgrading the Battle scene into a more product-like city-park competition board.
+- [Fortune Board Bright Amusement Map Polish Design](./specs/2026-03-29-fortune-board-bright-amusement-map-polish-design.md): approved design for the next visual pass, shifting the Battle scene to a bright amusement-map look with reusable scenic art and responsive layout behavior.
 
 ## Plans
 
 - [Plans Index](./plans/README.md): implementation plans created after a spec is approved and reviewed.
+- [Fortune Board City Park Map Rework Implementation Plan](./plans/2026-03-28-fortune-board-city-park-map-rework.md): execution plan for the next Battle-scene presentation and pacing upgrade.
 
 ## Current Delivery Surface
 

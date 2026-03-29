@@ -6,6 +6,8 @@ This index tracks approved design specifications that are ready for implementati
 
 - [Fortune Board First Playable MVP Design](./2026-03-28-fortune-board-first-playable-mvp-design.md): design for the first real Cocos Creator playable slice covering the board loop, HUD, and minimal AI flow.
 - [Fortune Board Cocos CI Verification Design](./2026-03-28-fortune-board-cocos-ci-verification-design.md): design for layered CI verification using repository preflight checks plus a GUI-capable macOS Cocos command-line build smoke test.
+- [Fortune Board City Park Map Rework Design](./2026-03-28-fortune-board-city-park-map-rework-design.md): design for reworking the current Battle scene into a city-park-style competition board with richer tile variety and presentation.
+- [Fortune Board Bright Amusement Map Polish Design](./2026-03-29-fortune-board-bright-amusement-map-polish-design.md): design for evolving the Battle scene into a bright amusement-map product surface with Stitch-assisted scenic assets and responsive layout rules.
 
 ## Maintenance Rules
 

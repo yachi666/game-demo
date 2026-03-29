@@ -10,6 +10,7 @@ When adding, moving, or replacing documentation, update this file in the same ch
 ## Research
 
 - [Research Docs](./research/README.md): research and technical evaluation notes that support delivery decisions.
+- [Tiantian Fuweng Map References](./research/tiantian-fuweng-map-references/README.md): public screenshots of Tiantian Fuweng maps collected for internal reference only.
 
 ## Delivery
 
@@ -19,6 +20,9 @@ When adding, moving, or replacing documentation, update this file in the same ch
 - [Fortune Board Cocos CI Verification Design](./superpowers/specs/2026-03-28-fortune-board-cocos-ci-verification-design.md): approved design for automated Cocos import/build verification in CI using a GUI-capable macOS runner.
 - [Fortune Board Cocos CI Verification Implementation Plan](./superpowers/plans/2026-03-28-fortune-board-cocos-ci-verification-implementation-plan.md): task-by-task plan for wiring generic preflight checks, an authoritative build wrapper, and CI workflow coverage.
 - [Fortune Board Cards And Skills Alpha Implementation Plan](./superpowers/plans/2026-03-28-fortune-board-cards-skills-alpha.md): next-iteration plan for adding deterministic cards, role skills, and AI usage on top of the first playable Battle scene.
+- [Fortune Board City Park Map Rework Design](./superpowers/specs/2026-03-28-fortune-board-city-park-map-rework-design.md): approved design for reworking the Battle scene into a city-park-style competition board.
+- [Fortune Board City Park Map Rework Implementation Plan](./superpowers/plans/2026-03-28-fortune-board-city-park-map-rework.md): execution plan for rebuilding the Battle scene into a city-park competition board with richer tile variety and presentation.
+- [Fortune Board Bright Amusement Map Polish Design](./superpowers/specs/2026-03-29-fortune-board-bright-amusement-map-polish-design.md): approved visual-direction spec for turning the Battle scene into a bright amusement-map product surface with responsive support and Stitch-generated scenic assets.
 - [Infrastructure Checklist](./infrastructure-checklist.md): phased recommendation for the minimum client, tooling, observability, and backend infrastructure needed before and after MVP validation.
 
 ## Local Development
