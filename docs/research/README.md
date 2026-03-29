@@ -5,6 +5,8 @@ This folder contains technical research, comparisons, and implementation-directi
 ## Documents
 
 - [Cocos Creator Research](./cocos-creator.md): evaluation of the current engine choice and the implementation principles that follow from it.
+- [Tiantian Fuweng Map References](./tiantian-fuweng-map-references/README.md): externally sourced map screenshots kept for internal board-layout, pacing, and theming research.
+- [Tiantian Fuweng Game Screenshots](./tiantian-fuweng-game-screenshots/README.md): game UI screenshots including characters, maps, cards and interface elements for visual reference.
 
 ## Maintenance Rules
 

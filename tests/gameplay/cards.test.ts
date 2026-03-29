@@ -51,7 +51,7 @@ describe('cards', () => {
 
     const nextMatch = playCardForPlayer(match, 0, 'card-move-back-1');
 
-    expect(nextMatch.players[0].position).toBe(7);
+    expect(nextMatch.players[0].position).toBe(BOARD_CONFIG.length - 1);
     expect(nextMatch.players[0].cash).toBe(400);
     expect(nextMatch.discardPile).toEqual(['card-move-back-1']);
   });

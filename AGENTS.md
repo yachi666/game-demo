@@ -53,6 +53,10 @@ There are no project-local build or test commands configured yet. Before opening
 
 For the current repository state, the most universally useful commands are still `git status` and `git log --oneline`, plus file-level inspection in `docs/`.
 
+When opening the Cocos project locally, prefer `Cocos Dashboard` over launching `CocosCreator.app` directly so project discovery and editor startup stay aligned with the recommended workflow. The preferred command is:
+
+- `open -a /Applications/CocosDashboard.app /Users/lzn/Documents/trae_projects/demo`
+
 ## Coding Style & Naming Conventions
 Use clear, descriptive names and follow the dominant convention of the surrounding toolchain. Baseline formatting rules:
 

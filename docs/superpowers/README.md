@@ -12,6 +12,7 @@ This folder contains validated delivery documents that turn approved product dir
 
 - [Plans Index](./plans/README.md): implementation plans created after a spec is approved and reviewed.
 - [Fortune Board City Park Map Rework Implementation Plan](./plans/2026-03-28-fortune-board-city-park-map-rework.md): execution plan for the next Battle-scene presentation and pacing upgrade.
+- [Fortune Board Bright Amusement Map Polish Implementation Plan](./plans/2026-03-29-fortune-board-bright-amusement-map-polish.md): execution plan for the visual productization pass that adds Stitch-backed scenic art, structured HUD cards, and responsive layout behavior to the Battle scene.
 
 ## Current Delivery Surface
 

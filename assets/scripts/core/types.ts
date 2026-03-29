@@ -1,9 +1,18 @@
 import { GamePhase } from './phases';
 
-export type TileType = 'start' | 'property' | 'reward' | 'penalty';
+export type TileType = 'start' | 'property' | 'reward' | 'penalty' | 'chance' | 'festival';
+export type BoardDistrict = 'civic-plaza' | 'play-street' | 'harbor-leisure' | 'sky-garden';
 export type CardEffectType =
   | 'gainCash'
   | 'moveSteps'
+  | 'shieldPenaltyOrToll'
+  | 'discountNextProperty'
+  | 'boostNextToll';
+export type EventEffectType =
+  | 'gainCash'
+  | 'loseCash'
+  | 'moveForward'
+  | 'moveBackward'
   | 'shieldPenaltyOrToll'
   | 'discountNextProperty'
   | 'boostNextToll';
@@ -14,6 +23,13 @@ export interface CardDefinition {
   id: string;
   label: string;
   effectType: CardEffectType;
+  amount: number;
+}
+
+export interface EventDefinition {
+  id: string;
+  label: string;
+  effectType: EventEffectType;
   amount: number;
 }
 
@@ -29,6 +45,9 @@ export interface TileConfig {
   id: string;
   label: string;
   type: TileType;
+  district?: BoardDistrict;
+  eventId?: string;
+  accentColor?: string;
   purchaseCost?: number;
   tollCost?: number;
   rewardAmount?: number;
@@ -66,7 +85,7 @@ export interface StatusEffectState {
   ownerId: string;
   effectType: CardEffectType | SkillEffectType;
   amount: number;
-  sourceType: 'card' | 'skill';
+  sourceType: 'card' | 'skill' | 'event';
 }
 
 export interface MatchLogEntry {

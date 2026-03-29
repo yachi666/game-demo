@@ -1,0 +1,106 @@
+<h2>Battle Map Rework Directions</h2>
+<p class="subtitle">目标一致：参考《天天富翁》的产品结构，但做原创城市乐园风格。区别在于资源依赖、完成度和迭代速度。</p>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">A. 程序化 UI 优先</div>
+        <div class="mockup-body" style="background:linear-gradient(180deg,#0f172a,#111827);padding:14px;min-height:260px;">
+          <div style="position:relative;height:220px;border-radius:18px;background:radial-gradient(circle at center,#1f2937 0%,#0b1020 68%);overflow:hidden;">
+            <div style="position:absolute;left:50%;top:50%;width:180px;height:96px;transform:translate(-50%,-50%);border-radius:18px;background:#e5e7eb22;border:2px solid #f8fafc55;"></div>
+            <div style="position:absolute;left:28px;top:90px;width:92px;height:44px;background:#38bdf8;border-radius:12px;"></div>
+            <div style="position:absolute;left:104px;top:42px;width:92px;height:44px;background:#a78bfa;border-radius:12px;transform:rotate(-28deg);"></div>
+            <div style="position:absolute;right:104px;top:42px;width:92px;height:44px;background:#22c55e;border-radius:12px;transform:rotate(28deg);"></div>
+            <div style="position:absolute;right:28px;top:90px;width:92px;height:44px;background:#f59e0b;border-radius:12px;"></div>
+            <div style="position:absolute;right:104px;bottom:42px;width:92px;height:44px;background:#fb7185;border-radius:12px;transform:rotate(-28deg);"></div>
+            <div style="position:absolute;left:104px;bottom:42px;width:92px;height:44px;background:#60a5fa;border-radius:12px;transform:rotate(28deg);"></div>
+            <div style="position:absolute;left:24px;top:20px;width:110px;height:54px;border-radius:16px;background:#111827;border:1px solid #ffffff33;"></div>
+            <div style="position:absolute;right:24px;top:20px;width:110px;height:54px;border-radius:16px;background:#111827;border:1px solid #ffffff33;"></div>
+            <div style="position:absolute;left:24px;bottom:20px;width:110px;height:54px;border-radius:16px;background:#111827;border:1px solid #ffffff33;"></div>
+            <div style="position:absolute;right:24px;bottom:20px;width:110px;height:54px;border-radius:16px;background:#111827;border:1px solid #ffffff33;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A. 程序化 UI 优先</h3>
+      <p>几乎不依赖外部贴图，靠面板、渐变、几何卡槽做质感。速度最快，但离商业地图感还有一层。</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">B. 混合式成品化</div>
+        <div class="mockup-body" style="background:linear-gradient(180deg,#d7eefc,#fdf6e7);padding:14px;min-height:260px;">
+          <div style="position:relative;height:220px;border-radius:22px;background:radial-gradient(circle at center,#e5e7eb 0%,#cbd5e1 38%,#94a3b8 100%);overflow:hidden;">
+            <div style="position:absolute;left:50%;top:50%;width:188px;height:106px;transform:translate(-50%,-50%);border-radius:18px;background:linear-gradient(180deg,#f8fafc,#dbeafe);border:3px solid #ffffffaa;box-shadow:0 10px 24px #0f172a33;"></div>
+            <div style="position:absolute;left:18px;top:80px;width:112px;height:50px;background:linear-gradient(180deg,#fde68a,#f59e0b);border-radius:14px;border:2px solid #fff;"></div>
+            <div style="position:absolute;left:88px;top:28px;width:116px;height:52px;background:linear-gradient(180deg,#c4b5fd,#8b5cf6);border-radius:14px;border:2px solid #fff;transform:rotate(-28deg);"></div>
+            <div style="position:absolute;right:88px;top:28px;width:116px;height:52px;background:linear-gradient(180deg,#99f6e4,#14b8a6);border-radius:14px;border:2px solid #fff;transform:rotate(28deg);"></div>
+            <div style="position:absolute;right:18px;top:80px;width:112px;height:50px;background:linear-gradient(180deg,#bfdbfe,#38bdf8);border-radius:14px;border:2px solid #fff;"></div>
+            <div style="position:absolute;right:88px;bottom:28px;width:116px;height:52px;background:linear-gradient(180deg,#fecdd3,#f97316);border-radius:14px;border:2px solid #fff;transform:rotate(-28deg);"></div>
+            <div style="position:absolute;left:88px;bottom:28px;width:116px;height:52px;background:linear-gradient(180deg,#bbf7d0,#84cc16);border-radius:14px;border:2px solid #fff;transform:rotate(28deg);"></div>
+            <div style="position:absolute;left:16px;top:16px;width:116px;height:56px;border-radius:16px;background:#0f172add;border:1px solid #ffffff55;"></div>
+            <div style="position:absolute;right:16px;top:16px;width:116px;height:56px;border-radius:16px;background:#0f172add;border:1px solid #ffffff55;"></div>
+            <div style="position:absolute;left:16px;bottom:16px;width:116px;height:56px;border-radius:16px;background:#0f172add;border:1px solid #ffffff55;"></div>
+            <div style="position:absolute;right:16px;bottom:16px;width:116px;height:56px;border-radius:16px;background:#0f172add;border:1px solid #ffffff55;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B. 混合式成品化</h3>
+      <p>用 Stitch 生成底图、中心舞台和牌槽纹理，再用 Cocos 负责动态文案、状态和交互。产品感最稳，后续也最好维护。</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div class="mockup">
+        <div class="mockup-header">C. 重贴图拟真复刻</div>
+        <div class="mockup-body" style="background:linear-gradient(180deg,#0b132b,#1c2541);padding:14px;min-height:260px;">
+          <div style="position:relative;height:220px;border-radius:22px;background:radial-gradient(circle at center,#6b7280 0%,#374151 38%,#111827 100%);overflow:hidden;">
+            <div style="position:absolute;left:50%;top:50%;width:198px;height:114px;transform:translate(-50%,-50%);border-radius:20px;background:linear-gradient(180deg,#d1d5db,#6b7280);border:2px solid #fff;"></div>
+            <div style="position:absolute;left:16px;top:78px;width:124px;height:54px;background:linear-gradient(180deg,#ffffff,#e5e7eb);border-radius:10px;"></div>
+            <div style="position:absolute;left:88px;top:20px;width:132px;height:56px;background:linear-gradient(180deg,#ffffff,#d1d5db);border-radius:10px;transform:rotate(-28deg);"></div>
+            <div style="position:absolute;right:88px;top:20px;width:132px;height:56px;background:linear-gradient(180deg,#ffffff,#d1d5db);border-radius:10px;transform:rotate(28deg);"></div>
+            <div style="position:absolute;right:16px;top:78px;width:124px;height:54px;background:linear-gradient(180deg,#ffffff,#e5e7eb);border-radius:10px;"></div>
+            <div style="position:absolute;right:88px;bottom:20px;width:132px;height:56px;background:linear-gradient(180deg,#ffffff,#d1d5db);border-radius:10px;transform:rotate(-28deg);"></div>
+            <div style="position:absolute;left:88px;bottom:20px;width:132px;height:56px;background:linear-gradient(180deg,#ffffff,#d1d5db);border-radius:10px;transform:rotate(28deg);"></div>
+            <div style="position:absolute;left:10px;top:14px;width:122px;height:58px;border-radius:18px;background:#0f172aee;"></div>
+            <div style="position:absolute;right:10px;top:14px;width:122px;height:58px;border-radius:18px;background:#0f172aee;"></div>
+            <div style="position:absolute;left:10px;bottom:14px;width:122px;height:58px;border-radius:18px;background:#0f172aee;"></div>
+            <div style="position:absolute;right:10px;bottom:14px;width:122px;height:58px;border-radius:18px;background:#0f172aee;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C. 重贴图拟真复刻</h3>
+      <p>大量依赖生成或手工贴图，努力逼近商业手游截图观感。短期最像参考图，但资源迭代和适配成本最高。</p>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="pros-cons">
+    <div class="pros">
+      <h4>我推荐 B 的原因</h4>
+      <ul>
+        <li>比 A 更像真正产品界面，不再是黑底文字原型。</li>
+        <li>比 C 更容易维护，状态变化继续交给 Cocos 代码。</li>
+        <li>适合现在这个阶段：先拉到“能看”的成品感，再逐步替换资源。</li>
+      </ul>
+    </div>
+    <div class="cons">
+      <h4>B 的代价</h4>
+      <ul>
+        <li>需要补一批原创背景、中心舞台和地块底板资源。</li>
+        <li>场景层级和渲染节点要重构，不是小修小补。</li>
+        <li>要额外验证 Stitch 资源在 Cocos 中的适配效果。</li>
+      </ul>
+    </div>
+  </div>
+</div>

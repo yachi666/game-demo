@@ -4,6 +4,8 @@ This index tracks implementation plans derived from approved specs.
 
 ## Documents
 
+- [Fortune Board Bright Amusement Map Polish Implementation Plan](./2026-03-29-fortune-board-bright-amusement-map-polish.md): execution plan for the responsive bright-amusement visual pass, covering scenic asset import, structured tile rendering, and framed HUD composition.
+- [Fortune Board City Park Map Rework Implementation Plan](./2026-03-28-fortune-board-city-park-map-rework.md): execution plan for rebuilding the Battle scene into a city-park competition board with richer tile variety and presentation.
 - [Fortune Board Cards And Skills Alpha Implementation Plan](./2026-03-28-fortune-board-cards-skills-alpha.md): next-iteration plan for adding deterministic cards, role skills, and AI usage to the existing playable Battle scene.
 - [Fortune Board Cocos CI Verification Implementation Plan](./2026-03-28-fortune-board-cocos-ci-verification-implementation-plan.md): execution plan for adding generic-runner preflight checks, an authoritative Cocos build wrapper, and macOS GUI CI coverage.
 - [Fortune Board First Playable MVP Implementation Plan](./2026-03-28-fortune-board-first-playable-mvp.md): implemented execution record for initializing the real Cocos project and building the first playable board loop.

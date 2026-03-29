@@ -1,4 +1,4 @@
-import { _decorator, Button, Component, Label, Node, tween, UITransform, Vec3 } from 'cc';
+import { _decorator, Button, Color, Component, Label, Node, tween, UITransform, Vec3 } from 'cc';
 
 import { decideCardToPlay } from '../ai/decide-card';
 import { decideSkillToUse } from '../ai/decide-skill';
@@ -12,6 +12,7 @@ import { STARTER_CARD_DEFINITIONS } from '../data/card-config';
 import { MATCH_CONFIG } from '../data/match-config';
 import { ROLE_DEFINITIONS } from '../data/role-config';
 import { playCardForPlayer } from '../gameplay/cards';
+import { applyCostDiscount, getTileAt } from '../gameplay/economy';
 import { applyRollMovementForPlayer } from '../gameplay/movement';
 import { resolveTileForPlayer } from '../gameplay/resolve-tile';
 import { applySkillForPlayer } from '../gameplay/skills';
@@ -23,6 +24,7 @@ import { PropertyPrompt } from './PropertyPrompt';
 import { ResultPanel } from './ResultPanel';
 import { RoleSelectionController } from './RoleSelectionController';
 import { SkillButtonController } from './SkillButtonController';
+import { getTilePresentation } from './battle-presentation';
 import {
   advanceToNextTurnFlow,
   beginTurnFlow,
@@ -30,8 +32,20 @@ import {
   finishPreRollActionWindow,
   openRoleSelectionFlow,
 } from '../core/turn-flow';
+import { createDiamondTrackPositions } from './battle-layout';
+import { getBattleLayoutProfile } from './battle-responsive-layout';
 
 const { ccclass, property } = _decorator;
+type ComponentCtor<T extends Component> = new () => T;
+
+interface BattleSceneRoots {
+  backgroundLayer: Node;
+  boardDecorLayer: Node;
+  tileLayer: Node;
+  tokenLayer: Node;
+  hudLayer: Node;
+  overlayLayer: Node;
+}
 
 @ccclass('BattleController')
 export class BattleController extends Component {
@@ -152,46 +166,109 @@ export class BattleController extends Component {
   }
 
   private bindScene(): void {
-    const hudNode = this.getRequiredChild(this.node, 'Hud');
-    const propertyPromptNode = this.getRequiredChild(this.node, 'PropertyPrompt');
-    const resultPanelNode = this.getRequiredChild(this.node, 'ResultPanel');
-    const boardNode = this.getRequiredChild(this.node, 'Board');
-    const tokensNode = this.getRequiredChild(this.node, 'Tokens');
+    const canvasNode = this.getCanvasRoot();
+    const viewport = canvasNode.getComponent(UITransform)?.contentSize ?? { width: 960, height: 640 };
+    const layout = getBattleLayoutProfile({ width: viewport.width, height: viewport.height });
 
-    this.hud = hudNode.getComponent(HudController) ?? hudNode.addComponent(HudController);
-    this.hud.activePlayerLabel = this.getRequiredLabel(hudNode, 'ActivePlayerLabel');
-    this.hud.cashLabel = this.getRequiredLabel(hudNode, 'CashLabel');
-    this.hud.assetsLabel = this.getRequiredLabel(hudNode, 'AssetsLabel');
-    this.hud.turnLabel = this.getRequiredLabel(hudNode, 'TurnLabel');
-    this.hud.roleLabel = this.getOrCreateLabel(hudNode, 'RoleLabel', new Vec3(-150, -10, 0), 'Role: Unassigned');
-    this.hud.cardCountLabel = this.getOrCreateLabel(hudNode, 'CardCountLabel', new Vec3(120, -10, 0), 'Cards: 0');
-    this.hud.logLabel = this.getRequiredLabel(hudNode, 'LogLabel');
+    const hudNode = this.getOptionalChild(canvasNode, 'Hud') ?? canvasNode;
+    const boardNode = this.getOptionalChild(canvasNode, 'Board') ?? canvasNode;
+    const tokensNode = this.getOptionalChild(canvasNode, 'Tokens') ?? canvasNode;
+    const overlayNode = this.getOptionalChild(canvasNode, 'Overlay') ?? canvasNode;
 
-    this.propertyPrompt =
-      propertyPromptNode.getComponent(PropertyPrompt) ?? propertyPromptNode.addComponent(PropertyPrompt);
-    this.propertyPrompt.root = propertyPromptNode;
-    this.propertyPrompt.buyButton = this.getRequiredButton(propertyPromptNode, 'BuyButton');
-    this.propertyPrompt.skipButton = this.getRequiredButton(propertyPromptNode, 'SkipButton');
+    const hud = this.getOptionalComponent(hudNode, HudController) ?? this.node.addComponent(HudController);
+    hud.activePlayerLabel = this.getOptionalLabel(hudNode, 'ActivePlayerLabel');
+    hud.turnLabel = this.getOptionalLabel(hudNode, 'TurnLabel');
+    hud.latestEventLabel = this.getOptionalLabel(hudNode, 'LatestEventLabel');
+    hud.logLabel = this.getOptionalLabel(hudNode, 'LogLabel');
+    hud.layoutProfile = layout.profile;
+    this.hud = hud;
 
-    this.resultPanel = resultPanelNode.getComponent(ResultPanel) ?? resultPanelNode.addComponent(ResultPanel);
-    this.resultPanel.root = resultPanelNode;
-    this.resultPanel.resultLabel = this.getRequiredLabel(resultPanelNode, 'ResultLabel');
+    const rollButtonNode = this.getOptionalChild(hudNode, 'RollButton');
+    if (rollButtonNode) {
+      const rollButton = rollButtonNode.getComponent(Button);
+      if (rollButton) {
+        this.rollButton = rollButton;
+        rollButton.node.on(Button.EventType.CLICK, this.onRollClicked, this);
+      }
+    }
 
-    this.roleSelection = this.bindRoleSelection();
-    this.cardHand = this.bindCardHand();
-    this.skillButton = this.bindSkillButton();
+    const propertyPromptNode = this.getOptionalChild(canvasNode, 'PropertyPrompt');
+    if (propertyPromptNode) {
+      const propertyPrompt = this.getOptionalComponent(propertyPromptNode, PropertyPrompt) ?? propertyPromptNode.addComponent(PropertyPrompt);
+      propertyPrompt.root = propertyPromptNode;
+      propertyPrompt.frameNode = propertyPromptNode;
+      propertyPrompt.titleLabel = this.getOptionalLabel(propertyPromptNode, 'PromptLabel');
+      propertyPrompt.districtLabel = this.getOptionalLabel(propertyPromptNode, 'DistrictLabel');
+      propertyPrompt.costLabel = this.getOptionalLabel(propertyPromptNode, 'CostLabel');
+      propertyPrompt.projectedCashLabel = this.getOptionalLabel(propertyPromptNode, 'ProjectedCashLabel');
+      propertyPrompt.buttonRowNode = propertyPromptNode;
+      propertyPrompt.buyButton = this.getOptionalButton(propertyPromptNode, 'BuyButton');
+      propertyPrompt.skipButton = this.getOptionalButton(propertyPromptNode, 'SkipButton');
+      propertyPrompt.layoutProfile = layout.profile;
+      this.propertyPrompt = propertyPrompt;
+      if (propertyPrompt.buyButton) {
+        propertyPrompt.buyButton.node.on(Button.EventType.CLICK, this.onBuyProperty, this);
+      }
+      if (propertyPrompt.skipButton) {
+        propertyPrompt.skipButton.node.on(Button.EventType.CLICK, this.onSkipProperty, this);
+      }
+    }
 
-    this.rollButton = this.getRequiredButton(hudNode, 'RollButton');
-    this.rollButton.node.on(Button.EventType.CLICK, this.onRollClicked, this);
-    this.propertyPrompt.buyButton.node.on(Button.EventType.CLICK, this.onBuyProperty, this);
-    this.propertyPrompt.skipButton.node.on(Button.EventType.CLICK, this.onSkipProperty, this);
+    const resultPanelNode = this.getOptionalChild(canvasNode, 'ResultPanel');
+    if (resultPanelNode) {
+      const resultPanel = this.getOptionalComponent(resultPanelNode, ResultPanel) ?? resultPanelNode.addComponent(ResultPanel);
+      resultPanel.root = resultPanelNode;
+      resultPanel.frameNode = resultPanelNode;
+      resultPanel.headlineLabel = this.getOptionalLabel(resultPanelNode, 'ResultLabel');
+      resultPanel.resultLabel = resultPanel.headlineLabel;
+      this.resultPanel = resultPanel;
+    }
 
-    this.tileNodes = boardNode.children
-      .slice()
-      .sort((left, right) => left.name.localeCompare(right.name, undefined, { numeric: true }));
-    this.tokenNodes = tokensNode.children
-      .slice()
-      .sort((left, right) => left.name.localeCompare(right.name, undefined, { numeric: true }));
+    const tilePositions = createDiamondTrackPositions(BOARD_CONFIG.length, 330, 210);
+    this.tileNodes = BOARD_CONFIG.map((tile, index) => {
+      const tileNode = this.getOptionalChild(boardNode, `Tile${index}`);
+      if (tileNode) {
+        tileNode.setPosition(tilePositions[index]?.x ?? 0, tilePositions[index]?.y ?? 0, 0);
+      }
+      return tileNode;
+    }).filter((n): n is Node => n !== null);
+
+    this.tokenNodes = this.match.players.map((_player, index) => {
+      return this.getOptionalChild(tokensNode, `Token${index}`);
+    }).filter((n): n is Node => n !== null);
+  }
+
+  private getOptionalChild(parent: Node, name: string): Node | null {
+    return parent.children.find(child => child.name === name) ?? null;
+  }
+
+  private getOptionalComponent<T extends Component>(node: Node, ctor: ComponentCtor<T>): T | null {
+    return node.getComponent(ctor);
+  }
+
+  private getOptionalLabel(parent: Node, name: string): Label | null {
+    const node = this.getOptionalChild(parent, name);
+    return node?.getComponent(Label) ?? null;
+  }
+
+  private getOptionalButton(parent: Node, name: string): Button | null {
+    const node = this.getOptionalChild(parent, name);
+    return node?.getComponent(Button) ?? null;
+  }
+
+  private getSceneRoots(canvasNode: Node): BattleSceneRoots {
+    return {
+      backgroundLayer: this.getOptionalChild(canvasNode, 'BackgroundLayer') ?? canvasNode,
+      boardDecorLayer: this.getOptionalChild(canvasNode, 'BoardDecorLayer') ?? canvasNode,
+      tileLayer: this.getOptionalChild(canvasNode, 'TileLayer') ?? this.getRequiredChild(canvasNode, 'Board'),
+      tokenLayer: this.getOptionalChild(canvasNode, 'TokenLayer') ?? this.getRequiredChild(canvasNode, 'Tokens'),
+      hudLayer: this.getOptionalChild(canvasNode, 'HudLayer') ?? this.getRequiredChild(canvasNode, 'Hud'),
+      overlayLayer: this.getOptionalChild(canvasNode, 'OverlayLayer') ?? this.getRequiredChild(canvasNode, 'ResultPanel'),
+    };
+  }
+
+  private getOptionalChild(parent: Node, name: string): Node | null {
+    return parent.children.find(child => child.name === name) ?? null;
   }
 
   private runRoll(value: number): void {
@@ -216,6 +293,7 @@ export class BattleController extends Component {
     if (result.requiresPropertyDecision && player.isHuman) {
       this.resumePreRollAfterPropertyDecision = !shouldEndTurnAfterResolution;
       this.match = advancePhase(this.match, { type: 'PROMPT_PROPERTY_DECISION' });
+      this.populatePropertyPrompt(activeIndex);
       this.propertyPrompt?.show();
       this.render();
       return;
@@ -367,6 +445,7 @@ export class BattleController extends Component {
       }
     }
 
+    this.renderBoardTiles();
     this.hud?.render(this.match);
   }
 
@@ -401,43 +480,43 @@ export class BattleController extends Component {
     return true;
   }
 
-  private bindRoleSelection(): RoleSelectionController {
-    const root = this.getOrCreateChild(this.node, 'RoleSelection');
-    const transform = root.getComponent(UITransform) ?? root.addComponent(UITransform);
+  private bindRoleSelection(parent: Node): RoleSelectionController {
+    const root = this.getRequiredChild(parent, 'RoleSelection');
+    const transform = this.getRequiredTransform(root);
     transform.setContentSize(320, 240);
     root.setPosition(0, 40, 0);
-    const controller = root.getComponent(RoleSelectionController) ?? root.addComponent(RoleSelectionController);
+    const controller = this.getRequiredComponent(root, RoleSelectionController, 'RoleSelectionController');
     controller.root = root;
-    controller.titleLabel = this.getOrCreateLabel(root, 'TitleLabel', new Vec3(0, 100, 0), 'Choose Your Role');
-    controller.optionsRoot = this.getOrCreateChild(root, 'Options');
+    controller.titleLabel = this.getRequiredLabel(root, 'TitleLabel');
+    controller.optionsRoot = this.getRequiredChild(root, 'Options');
     controller.hide();
     return controller;
   }
 
-  private bindCardHand(): CardHandController {
-    const root = this.getOrCreateChild(this.node, 'CardHand');
-    const transform = root.getComponent(UITransform) ?? root.addComponent(UITransform);
+  private bindCardHand(parent: Node): CardHandController {
+    const root = this.getRequiredChild(parent, 'CardHand');
+    const transform = this.getRequiredTransform(root);
     transform.setContentSize(620, 100);
-    root.setPosition(-260, -270, 0);
-    const controller = root.getComponent(CardHandController) ?? root.addComponent(CardHandController);
+    root.setPosition(-120, 6, 0);
+    const controller = this.getRequiredComponent(root, CardHandController, 'CardHandController');
     controller.root = root;
-    controller.titleLabel = this.getOrCreateLabel(root, 'TitleLabel', new Vec3(0, 34, 0), 'Hand');
-    controller.cardsRoot = this.getOrCreateChild(root, 'Cards');
+    controller.titleLabel = this.getRequiredLabel(root, 'TitleLabel');
+    controller.cardsRoot = this.getRequiredChild(root, 'Cards');
     controller.hide();
     return controller;
   }
 
-  private bindSkillButton(): SkillButtonController {
-    const root = this.getOrCreateChild(this.node, 'SkillButton');
-    const transform = root.getComponent(UITransform) ?? root.addComponent(UITransform);
+  private bindSkillButton(parent: Node): SkillButtonController {
+    const root = this.getRequiredChild(parent, 'SkillButton');
+    const transform = this.getRequiredTransform(root);
     transform.setContentSize(220, 40);
-    root.setPosition(340, -270, 0);
-    const button = root.getComponent(Button) ?? root.addComponent(Button);
+    root.setPosition(226, 0, 0);
+    const button = assertDefined(root.getComponent(Button) ?? undefined, 'Missing Button on SkillButton');
     button.transition = Button.Transition.NONE;
-    const controller = root.getComponent(SkillButtonController) ?? root.addComponent(SkillButtonController);
+    const controller = this.getRequiredComponent(root, SkillButtonController, 'SkillButtonController');
     controller.root = root;
     controller.button = button;
-    controller.label = this.getOrCreateLabel(root, 'Label', new Vec3(0, 0, 0), 'Use Skill');
+    controller.label = this.getRequiredLabel(root, 'Label');
     controller.hide();
     return controller;
   }
@@ -446,16 +525,12 @@ export class BattleController extends Component {
     return assertDefined(parent.getChildByName(name) ?? undefined, `Missing child node ${name} under ${parent.name}`);
   }
 
-  private getOrCreateChild(parent: Node, name: string): Node {
-    const existing = parent.getChildByName(name);
-    if (existing) {
-      return existing;
+  private getCanvasRoot(): Node {
+    if (this.node.name === 'Canvas') {
+      return this.node;
     }
 
-    const node = new Node(name);
-    node.layer = parent.layer;
-    parent.addChild(node);
-    return node;
+    return this.getRequiredChild(this.node, 'Canvas');
   }
 
   private getRequiredLabel(parent: Node, name: string): Label {
@@ -463,18 +538,75 @@ export class BattleController extends Component {
     return assertDefined(node.getComponent(Label) ?? undefined, `Missing Label on node ${name}`);
   }
 
-  private getOrCreateLabel(parent: Node, name: string, position: Vec3, text: string): Label {
-    const node = this.getOrCreateChild(parent, name);
-    const transform = node.getComponent(UITransform) ?? node.addComponent(UITransform);
-    transform.setContentSize(260, 30);
-    node.setPosition(position);
-    const label = node.getComponent(Label) ?? node.addComponent(Label);
-    label.string = text;
-    return label;
+  private getRequiredTransform(node: Node): UITransform {
+    return assertDefined(node.getComponent(UITransform) ?? undefined, `Missing UITransform on node ${node.name}`);
   }
 
   private getRequiredButton(parent: Node, name: string): Button {
     const node = this.getRequiredChild(parent, name);
     return assertDefined(node.getComponent(Button) ?? undefined, `Missing Button on node ${name}`);
+  }
+
+  private getRequiredComponent<T extends Component>(node: Node, ctor: ComponentCtor<T>, label: string): T {
+    return assertDefined(node.getComponent(ctor) ?? undefined, `Missing ${label} on node ${node.name}`);
+  }
+
+  private renderBoardTiles(): void {
+    this.tileNodes.forEach((tileNode, index) => {
+      const presentation = getTilePresentation(this.match, index);
+      const titleLabel = this.getRequiredLabel(tileNode, 'TitleLabel');
+      const supportingLabel = this.getRequiredLabel(tileNode, 'SupportingLabel');
+      const badgeLabel = this.getRequiredLabel(tileNode, 'BadgeLabel');
+
+      titleLabel.string = presentation.title;
+      supportingLabel.string = presentation.supportingLabel;
+      badgeLabel.string = presentation.badgeLabel;
+      titleLabel.color = this.colorFromHex(presentation.accentHex);
+      supportingLabel.color = this.colorFromHex(presentation.accentHex);
+      badgeLabel.color = this.colorFromHex(presentation.accentHex);
+      titleLabel.overflow = Label.Overflow.SHRINK;
+      supportingLabel.overflow = Label.Overflow.SHRINK;
+      badgeLabel.overflow = Label.Overflow.SHRINK;
+    });
+  }
+
+  private populatePropertyPrompt(playerIndex: number): void {
+    const player = assertDefined(this.match.players[playerIndex], `Missing player at index ${playerIndex}`);
+    const tile = getTileAt(this.match, player.position);
+    if (tile.type !== 'property') {
+      return;
+    }
+
+    const discount = this.match.statusEffects.reduce((highestDiscount, effect) => {
+      if (effect.ownerId !== player.id || effect.effectType !== 'discountNextProperty') {
+        return highestDiscount;
+      }
+
+      return Math.max(highestDiscount, effect.amount);
+    }, 0);
+    const purchaseCost = applyCostDiscount(tile.purchaseCost ?? 0, discount);
+    this.propertyPrompt?.render({
+      tileName: tile.label,
+      district: tile.district ? tile.district.replace(/-/g, ' ') : 'city park',
+      purchaseCost,
+      projectedCash: player.cash - purchaseCost,
+    });
+  }
+
+  private colorFromHex(hex: string): Color {
+    const normalized = hex.replace('#', '');
+    const value = normalized.length === 3
+      ? normalized
+          .split('')
+          .map((channel) => `${channel}${channel}`)
+          .join('')
+      : normalized;
+
+    return new Color(
+      Number.parseInt(value.slice(0, 2), 16),
+      Number.parseInt(value.slice(2, 4), 16),
+      Number.parseInt(value.slice(4, 6), 16),
+      255,
+    );
   }
 }

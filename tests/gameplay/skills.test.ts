@@ -7,6 +7,9 @@ import { applyRollMovementForPlayer } from '../../assets/scripts/gameplay/moveme
 import { resolveTileForPlayer } from '../../assets/scripts/gameplay/resolve-tile';
 import { applySkillForPlayer, clearSkillStateForPlayer } from '../../assets/scripts/gameplay/skills';
 
+const firstPropertyId = 'civic-1';
+const penaltyTileIndex = BOARD_CONFIG.findIndex((tile) => tile.id === 'penalty-1');
+
 describe('skills', () => {
   it('applies the Broker skill as a one-time property discount', () => {
     const match = createMatch(BOARD_CONFIG, MATCH_CONFIG);
@@ -33,7 +36,7 @@ describe('skills', () => {
     const match = createMatch(BOARD_CONFIG, MATCH_CONFIG);
     match.players[1].roleId = 'role-toll';
     match.players[0].position = 1;
-    match.properties.find((property) => property.tileId === 'property-1')!.ownerId = 'player-2';
+    match.properties.find((property) => property.tileId === firstPropertyId)!.ownerId = 'player-2';
 
     const skilledMatch = applySkillForPlayer(match, 1);
     const result = resolveTileForPlayer(skilledMatch, 0);
@@ -47,7 +50,7 @@ describe('skills', () => {
   it('applies the Courier skill as a one-time roll bonus through the movement pipeline', () => {
     const match = createMatch(BOARD_CONFIG, MATCH_CONFIG);
     match.players[0].roleId = 'role-mobility';
-    match.players[0].position = 6;
+    match.players[0].position = BOARD_CONFIG.length - 2;
 
     const skilledMatch = applySkillForPlayer(match, 0);
     const moved = applyRollMovementForPlayer(skilledMatch, 0, 1);
@@ -62,7 +65,7 @@ describe('skills', () => {
   it('applies the Guardian skill as a one-time shield against penalties', () => {
     const match = createMatch(BOARD_CONFIG, MATCH_CONFIG);
     match.players[0].roleId = 'role-defense';
-    match.players[0].position = 4;
+    match.players[0].position = penaltyTileIndex;
 
     const skilledMatch = applySkillForPlayer(match, 0);
     const result = resolveTileForPlayer(skilledMatch, 0);

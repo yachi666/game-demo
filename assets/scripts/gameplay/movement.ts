@@ -6,12 +6,14 @@ export function movePlayerPosition(current: number, steps: number, boardSize: nu
   const visitedPositions: number[] = [];
   let nextPosition = current;
   let passedStart = false;
+  let passedStartCount = 0;
 
   if (steps >= 0) {
     for (let step = 0; step < steps; step += 1) {
       nextPosition = (nextPosition + 1) % boardSize;
       if (nextPosition === 0) {
         passedStart = true;
+        passedStartCount += 1;
       }
       visitedPositions.push(nextPosition);
     }
@@ -25,6 +27,7 @@ export function movePlayerPosition(current: number, steps: number, boardSize: nu
   return {
     nextPosition,
     passedStart,
+    passedStartCount,
     visitedPositions,
   };
 }
@@ -35,14 +38,18 @@ export function applyMovementForPlayer(match: MatchState, playerIndex: number, s
   const movement = movePlayerPosition(nextPlayer.position, steps, nextMatch.board.length);
 
   nextPlayer.position = movement.nextPosition;
-  if (movement.passedStart) {
-    nextPlayer.cash += nextMatch.startBonus;
+  if (movement.passedStartCount > 0) {
+    nextPlayer.cash += nextMatch.startBonus * movement.passedStartCount;
   }
 
   return {
     match: nextMatch,
     movement,
   };
+}
+
+export function applyForcedMovement(match: MatchState, playerIndex: number, delta: number) {
+  return applyMovementForPlayer(match, playerIndex, delta);
 }
 
 export function applyRollMovementForPlayer(match: MatchState, playerIndex: number, roll: number) {

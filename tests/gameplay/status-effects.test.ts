@@ -6,10 +6,13 @@ import { MATCH_CONFIG } from '../../assets/scripts/data/match-config';
 import { resolveTileForPlayer } from '../../assets/scripts/gameplay/resolve-tile';
 import { addStatusEffect } from '../../assets/scripts/gameplay/status-effects';
 
+const penaltyTileIndex = BOARD_CONFIG.findIndex((tile) => tile.id === 'penalty-1');
+const firstPropertyId = 'civic-1';
+
 describe('status-effects', () => {
   it('prevents a penalty tile once when the player has a shield effect', () => {
     const match = createMatch(BOARD_CONFIG, MATCH_CONFIG);
-    match.players[0].position = 4;
+    match.players[0].position = penaltyTileIndex;
 
     const shieldedMatch = addStatusEffect(match, {
       id: 'shield-penalty',
@@ -28,7 +31,7 @@ describe('status-effects', () => {
   it('prevents an opponent toll once when the player has a shield effect', () => {
     const match = createMatch(BOARD_CONFIG, MATCH_CONFIG);
     match.players[0].position = 1;
-    match.properties.find((property) => property.tileId === 'property-1')!.ownerId = 'player-2';
+    match.properties.find((property) => property.tileId === firstPropertyId)!.ownerId = 'player-2';
 
     const shieldedMatch = addStatusEffect(match, {
       id: 'shield-toll',
@@ -60,14 +63,14 @@ describe('status-effects', () => {
     const result = resolveTileForPlayer(discountedMatch, 0, { type: 'buy' });
 
     expect(result.match.players[0].cash).toBe(320);
-    expect(result.match.properties.find((property) => property.tileId === 'property-1')?.ownerId).toBe('player-1');
+    expect(result.match.properties.find((property) => property.tileId === firstPropertyId)?.ownerId).toBe('player-1');
     expect(result.match.statusEffects).toEqual([]);
   });
 
   it('applies a one-time toll boost for the owner and consumes it after collection', () => {
     const match = createMatch(BOARD_CONFIG, MATCH_CONFIG);
     match.players[0].position = 1;
-    match.properties.find((property) => property.tileId === 'property-1')!.ownerId = 'player-2';
+    match.properties.find((property) => property.tileId === firstPropertyId)!.ownerId = 'player-2';
 
     const boostedMatch = addStatusEffect(match, {
       id: 'boost-toll',
@@ -87,7 +90,7 @@ describe('status-effects', () => {
   it('keeps a toll boost if the toll was fully blocked by a shield', () => {
     const match = createMatch(BOARD_CONFIG, MATCH_CONFIG);
     match.players[0].position = 1;
-    match.properties.find((property) => property.tileId === 'property-1')!.ownerId = 'player-2';
+    match.properties.find((property) => property.tileId === firstPropertyId)!.ownerId = 'player-2';
 
     const boostedMatch = addStatusEffect(match, {
       id: 'boost-toll',
