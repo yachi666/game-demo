@@ -1,72 +1,102 @@
 import { describe, expect, it } from 'vitest';
 
 import { createMatch } from '../../assets/scripts/core/create-match';
+import { beginTurnFlow, completeRoleSelectionFlow, openRoleSelectionFlow } from '../../assets/scripts/core/turn-flow';
 import { BOARD_CONFIG } from '../../assets/scripts/data/board-config';
 import { MATCH_CONFIG } from '../../assets/scripts/data/match-config';
+import * as battlePresentation from '../../assets/scripts/ui/battle-presentation';
 import {
-  getCenterStagePresentation,
   getPropertyPromptPresentation,
   getSeatPanelPresentation,
   getTilePresentation,
 } from '../../assets/scripts/ui/battle-presentation';
 
+type Match = ReturnType<typeof createMatch>;
+
+type TopInfoBannerPresentation = {
+  accentHex: string;
+  eventLabel: string;
+  incomeLabel: string;
+  roundLabel: string;
+};
+
+const getTopInfoBannerPresentation = (battlePresentation as Record<string, unknown>).getTopInfoBannerPresentation as
+  | ((match: Match) => TopInfoBannerPresentation)
+  | undefined;
+
+function getTopBannerPresentation(match: Match) {
+  expect(getTopInfoBannerPresentation).toBeTypeOf('function');
+  return getTopInfoBannerPresentation!(match);
+}
+
+function createAssignedMatch() {
+  return completeRoleSelectionFlow(openRoleSelectionFlow(createMatch(BOARD_CONFIG, MATCH_CONFIG)), 'role-toll');
+}
+
+describe('getTopInfoBannerPresentation', () => {
+  it('summarizes round, assets, and the latest event for a started match', () => {
+    const startedMatch = beginTurnFlow(createAssignedMatch());
+    startedMatch.logs.push({
+      turn: startedMatch.turn,
+      phase: startedMatch.phase,
+      message: 'Player 1 bought Mayor Plaza',
+    });
+
+    expect(getTopBannerPresentation(startedMatch)).toEqual({
+      roundLabel: 'Round 0',
+      incomeLabel: 'Assets 400',
+      eventLabel: 'Bought Mayor Plaza',
+      accentHex: startedMatch.players[startedMatch.activePlayerIndex]!.color,
+    });
+  });
+});
+
 describe('getSeatPanelPresentation', () => {
-  it('returns active-player seat copy with role and asset totals', () => {
-    const match = createMatch(BOARD_CONFIG, MATCH_CONFIG);
-    match.players[0].roleId = 'role-economy';
+  it('returns active-player seat fields with compact labels', () => {
+    const match = beginTurnFlow(createAssignedMatch());
 
-    const presentation = getSeatPanelPresentation(match, 0);
-
-    expect(presentation.title).toBe('Player 1 ACTIVE');
-    expect(presentation.lines).toEqual(['Cash: 400', 'Assets: 400', 'Role: Broker']);
-    expect(presentation.tintHex).toBe('#ffe8a3');
-    expect(presentation.opacity).toBe(255);
+    expect(getSeatPanelPresentation(match, 0)).toMatchObject({
+      playerNameLabel: 'Player 1',
+      cashLabel: 'Cash 400',
+      assetLabel: 'Assets 400',
+      statusLabel: 'ACTIVE',
+      avatarLabel: '1',
+      propertyCount: 0,
+      accentHex: match.players[0]!.color,
+      opacity: 255,
+    });
   });
 
   it('returns bankrupt emphasis for eliminated seats', () => {
     const match = createMatch(BOARD_CONFIG, MATCH_CONFIG);
-    match.players[2].isBankrupt = true;
+    match.players[2]!.isBankrupt = true;
 
-    const presentation = getSeatPanelPresentation(match, 2);
-
-    expect(presentation.title).toBe('AI 2 BANKRUPT');
-    expect(presentation.tintHex).toBe('#c47474');
-    expect(presentation.opacity).toBe(140);
+    expect(getSeatPanelPresentation(match, 2)).toMatchObject({
+      playerNameLabel: 'AI 2',
+      cashLabel: 'Cash 400',
+      assetLabel: 'Assets 400',
+      statusLabel: 'BANKRUPT',
+      avatarLabel: '3',
+      propertyCount: 0,
+      accentHex: '#c47474',
+      opacity: 140,
+    });
   });
 
-  it('keeps seat panel copy compact and role-aware', () => {
+  it('tracks owned property count on ready seats', () => {
     const match = createMatch(BOARD_CONFIG, MATCH_CONFIG);
-    match.players[1].roleId = 'role-economy';
+    match.properties.find((property) => property.tileId === 'civic-1')!.ownerId = match.players[1]!.id;
 
-    const seat = getSeatPanelPresentation(match, 1);
-
-    expect(seat.title).toContain('AI 1');
-    expect(seat.lines.some((line) => line.includes('Role: Broker'))).toBe(true);
-    expect(seat.lines).toHaveLength(3);
-  });
-});
-
-describe('getCenterStagePresentation', () => {
-  it('keeps full latest-event copy on desktop layouts', () => {
-    const match = createMatch(BOARD_CONFIG, MATCH_CONFIG);
-    match.logs.push({ turn: 1, phase: match.phase, message: 'Player 1 bought Mayor Plaza' });
-
-    const presentation = getCenterStagePresentation(match, 'desktop');
-
-    expect(presentation.activePlayerLabel).toBe('Current: Player 1');
-    expect(presentation.turnLabel).toBe('Turn: 0');
-    expect(presentation.latestEventLabel).toBe('Latest: Player 1 bought Mayor Plaza');
-  });
-
-  it('compresses latest-event copy on portrait layouts', () => {
-    const match = createMatch(BOARD_CONFIG, MATCH_CONFIG);
-    match.logs.push({ turn: 1, phase: match.phase, message: 'Player 1 bought Mayor Plaza' });
-
-    const presentation = getCenterStagePresentation(match, 'portrait');
-
-    expect(presentation.activePlayerLabel).toBe('Player 1');
-    expect(presentation.turnLabel).toBe('T0');
-    expect(presentation.latestEventLabel).toBe('Bought Mayor Plaza');
+    expect(getSeatPanelPresentation(match, 1)).toMatchObject({
+      playerNameLabel: 'AI 1',
+      cashLabel: 'Cash 400',
+      assetLabel: 'Assets 520',
+      statusLabel: 'READY',
+      avatarLabel: '2',
+      propertyCount: 1,
+      accentHex: match.players[1]!.color,
+      opacity: 210,
+    });
   });
 });
 
@@ -95,31 +125,29 @@ describe('getTilePresentation', () => {
   it('shows purchase info for unowned property tiles', () => {
     const match = createMatch(BOARD_CONFIG, MATCH_CONFIG);
 
-    const presentation = getTilePresentation(match, 1);
-
-    expect(presentation).toStrictEqual({
+    expect(getTilePresentation(match, 1)).toStrictEqual({
       title: 'Mayor Plaza',
       supportingLabel: 'Buy 120 | Toll 45',
       accentHex: '#4fc3f7',
       badgeLabel: 'Open',
+      buildingCount: 0,
     });
   });
 
-  it('switches to owner presentation and player color after purchase', () => {
+  it('switches to owner presentation, player color, and one building after purchase', () => {
     const match = createMatch(BOARD_CONFIG, MATCH_CONFIG);
     match.properties.find((property) => property.tileId === 'civic-1')!.ownerId = 'player-2';
 
-    const presentation = getTilePresentation(match, 1);
-
-    expect(presentation).toStrictEqual({
+    expect(getTilePresentation(match, 1)).toStrictEqual({
       title: 'Mayor Plaza',
       supportingLabel: 'Toll 45',
       badgeLabel: 'AI 1',
       accentHex: '#4aa8ff',
+      buildingCount: 1,
     });
   });
 
-  it('gives special tiles stronger themed subtitles', () => {
+  it('gives special tiles stronger themed subtitles without phantom buildings', () => {
     const match = createMatch(BOARD_CONFIG, MATCH_CONFIG);
 
     expect(getTilePresentation(match, 2)).toStrictEqual({
@@ -127,6 +155,7 @@ describe('getTilePresentation', () => {
       supportingLabel: 'Chance Event',
       badgeLabel: 'Fortune',
       accentHex: '#8bc34a',
+      buildingCount: 0,
     });
 
     expect(getTilePresentation(match, 8)).toStrictEqual({
@@ -134,14 +163,21 @@ describe('getTilePresentation', () => {
       supportingLabel: 'Festival Bonus',
       badgeLabel: 'Spotlight',
       accentHex: '#ffd166',
+      buildingCount: 0,
     });
   });
 
-  it('returns bounded tile-card copy rather than raw three-line debug text', () => {
+  it('returns bounded tile-card copy rather than raw debug text', () => {
     const match = createMatch(BOARD_CONFIG, MATCH_CONFIG);
     const presentation = getTilePresentation(match, 1);
 
-    expect(Object.keys(presentation).sort()).toEqual(['accentHex', 'badgeLabel', 'supportingLabel', 'title']);
+    expect(Object.keys(presentation).sort()).toEqual([
+      'accentHex',
+      'badgeLabel',
+      'buildingCount',
+      'supportingLabel',
+      'title',
+    ]);
   });
 
   it('throws when property ownership points at a missing player', () => {

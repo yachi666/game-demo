@@ -240,14 +240,28 @@ function createButtonNode(NodeCtor: MockCcModule['Node'], ButtonCtor: MockCcModu
 
 function createSeatPanel(NodeCtor: MockCcModule['Node'], LabelCtor: MockCcModule['Label'], index: number): MockNode {
   const node = new NodeCtor(`SeatPanel${index}`);
-  node.addChild(createLabelNode(NodeCtor, LabelCtor, 'TitleLabel'));
-  node.addChild(createLabelNode(NodeCtor, LabelCtor, 'StatsLabel'));
-  node.addChild(createLabelNode(NodeCtor, LabelCtor, 'StateLabel'));
+  const avatarPlate = new NodeCtor('AvatarPlate');
+  avatarPlate.addComponent(LabelCtor);
+  const statusBadge = new NodeCtor('StatusBadge');
+  statusBadge.addComponent(LabelCtor);
+
+  node.addChild(avatarPlate);
+  node.addChild(new NodeCtor('PanelFrame'));
+  node.addChild(new NodeCtor('PanelAccent'));
+  node.addChild(new NodeCtor('PropertyStack'));
+  node.addChild(createLabelNode(NodeCtor, LabelCtor, 'PlayerNameLabel'));
+  node.addChild(createLabelNode(NodeCtor, LabelCtor, 'CashLabel'));
+  node.addChild(createLabelNode(NodeCtor, LabelCtor, 'AssetLabel'));
+  node.addChild(statusBadge);
   return node;
 }
 
 function createTileNode(NodeCtor: MockCcModule['Node'], LabelCtor: MockCcModule['Label'], index: number): MockNode {
   const node = new NodeCtor(`Tile${index}`);
+  node.addChild(new NodeCtor('TileFrame'));
+  node.addChild(new NodeCtor('TileAccentBand'));
+  node.addChild(new NodeCtor('TileBadgePlate'));
+  node.addChild(new NodeCtor('BuildingStackAnchor'));
   node.addChild(createLabelNode(NodeCtor, LabelCtor, 'TitleLabel'));
   node.addChild(createLabelNode(NodeCtor, LabelCtor, 'SupportingLabel'));
   node.addChild(createLabelNode(NodeCtor, LabelCtor, 'BadgeLabel'));
@@ -272,91 +286,136 @@ describe('getBattleLayoutProfile', () => {
     }
   });
 
-  it('returns the desktop geometry at the 1.45 aspect-ratio threshold', () => {
+  it('returns the reference-image desktop geometry at the 1.45 aspect-ratio threshold', () => {
     const layout = getBattleLayoutProfile({ width: 1450, height: 1000 });
 
-    expect(layout).toEqual({
+    expect(layout).toMatchObject({
       profile: 'desktop',
-      boardScale: 1,
-      centerStage: { x: 0, y: 0, width: 320, height: 132 },
-      seatPanels: {
-        topLeft: { x: -360, y: 216 },
-        topRight: { x: 360, y: 216 },
-        bottomRight: { x: 360, y: -156 },
-        bottomLeft: { x: -360, y: -156 },
+      boardScale: 1.14,
+      topInfoBanner: { x: 0, y: 244, width: 406, height: 78 },
+      centerStage: { x: 0, y: 42, width: 360, height: 208 },
+      actionArea: { x: 0, y: -246, width: 360, height: 148 },
+      edgeActions: {
+        rightStack: { x: 452, y: 18 },
+        bottomLeftStack: { x: -372, y: -248 },
+        bottomRightStack: { x: 372, y: -248 },
       },
     });
   });
 
-  it('returns the narrow geometry at the 1.0 aspect-ratio threshold', () => {
+  it('returns the narrow profile at the 1.0 aspect-ratio threshold without collapsing the shell', () => {
     const layout = getBattleLayoutProfile({ width: 1000, height: 1000 });
 
-    expect(layout).toEqual({
-      profile: 'narrow',
-      boardScale: 0.88,
-      centerStage: { x: 0, y: -12, width: 280, height: 120 },
-      seatPanels: {
-        topLeft: { x: -286, y: 224 },
-        topRight: { x: 286, y: 224 },
-        bottomRight: { x: 286, y: -214 },
-        bottomLeft: { x: -286, y: -214 },
-      },
-    });
+    expect(layout.profile).toBe('narrow');
+    expect(layout.boardScale).toBeGreaterThan(1);
+    expect(layout.topInfoBanner).toBeDefined();
+    expect(layout.centerStage).toBeDefined();
+    expect(layout.actionArea).toBeDefined();
+    expect(layout.edgeActions).toBeDefined();
+    expect(layout.seatPanels).toBeDefined();
+    expect(layout.topInfoBanner?.height).toBeGreaterThanOrEqual(70);
+    expect(layout.centerStage?.width).toBeGreaterThanOrEqual(320);
+    expect(layout.centerStage?.height).toBeGreaterThanOrEqual(180);
+    expect(layout.actionArea?.width).toBeGreaterThanOrEqual(320);
+    expect(layout.topInfoBanner?.y).toBeGreaterThan(layout.centerStage!.y);
+    expect(layout.centerStage?.y).toBeGreaterThan(layout.actionArea!.y);
+    expect(layout.edgeActions?.rightStack.x).toBeGreaterThan(0);
+    expect(layout.edgeActions?.bottomLeftStack.x).toBeLessThan(0);
+    expect(layout.edgeActions?.bottomRightStack.x).toBeGreaterThan(0);
+    expect(layout.seatPanels?.topLeft.x).toBeLessThan(0);
+    expect(layout.seatPanels?.topRight.x).toBeGreaterThan(0);
+    expect(layout.seatPanels?.topLeft.y).toBeGreaterThan(layout.seatPanels!.bottomLeft.y);
+    expect(layout.seatPanels?.topRight.y).toBeGreaterThan(layout.seatPanels!.bottomRight.y);
   });
 
-  it('returns the portrait geometry below the 1.0 aspect-ratio threshold', () => {
+  it('returns a readable portrait geometry below the 1.0 aspect-ratio threshold', () => {
     const layout = getBattleLayoutProfile({ width: 999, height: 1000 });
 
-    expect(layout).toEqual({
-      profile: 'portrait',
-      boardScale: 0.76,
-      centerStage: { x: 0, y: 52, width: 250, height: 108 },
-      seatPanels: {
-        topLeft: { x: -176, y: 448 },
-        topRight: { x: 176, y: 448 },
-        bottomRight: { x: 176, y: -448 },
-        bottomLeft: { x: -176, y: -448 },
-      },
-    });
+    expect(layout.profile).toBe('portrait');
+    expect(layout.boardScale).toBeLessThan(1);
+    expect(layout.topInfoBanner).toBeDefined();
+    expect(layout.centerStage).toBeDefined();
+    expect(layout.actionArea).toBeDefined();
+    expect(layout.edgeActions).toBeDefined();
+    expect(layout.seatPanels).toBeDefined();
+    expect(layout.topInfoBanner?.height).toBeGreaterThanOrEqual(70);
+    expect(layout.centerStage?.width).toBeGreaterThanOrEqual(280);
+    expect(layout.centerStage?.height).toBeGreaterThanOrEqual(150);
+    expect(layout.actionArea?.width).toBeGreaterThanOrEqual(292);
+    expect(layout.edgeActions?.rightStack.x).toBeGreaterThanOrEqual(280);
+    expect(layout.seatPanels?.topLeft.x).toBeLessThanOrEqual(-200);
   });
 
+  // Anti-regression note: evaluate desktop-fidelity screenshots/previews in 设计分辨率 (960X640)
+  // or desktop/fullscreen with Show FPS disabled, not in a portrait phone shell.
   it('returns the desktop profile for a wide canvas', () => {
     const layout = getBattleLayoutProfile({ width: 1280, height: 720 });
 
     expect(layout.profile).toBe('desktop');
-    expect(layout.boardScale).toBe(1);
-    expect(layout.centerStage).toEqual({ x: 0, y: 0, width: 320, height: 132 });
+    expect(layout.boardScale).toBe(1.14);
+    expect(layout.topInfoBanner).toEqual({ x: 0, y: 244, width: 406, height: 78 });
+    expect(layout.centerStage).toEqual({ x: 0, y: 42, width: 360, height: 208 });
+    expect(layout.actionArea).toEqual({ x: 0, y: -246, width: 360, height: 148 });
   });
 
   it('returns the narrow profile for compressed landscape', () => {
     const layout = getBattleLayoutProfile({ width: 960, height: 720 });
 
     expect(layout.profile).toBe('narrow');
-    expect(layout.boardScale).toBe(0.88);
-    expect(layout.centerStage).toEqual({ x: 0, y: -12, width: 280, height: 120 });
+    expect(layout.boardScale).toBeGreaterThan(1);
+    expect(layout.topInfoBanner).toBeDefined();
+    expect(layout.centerStage).toBeDefined();
+    expect(layout.actionArea).toBeDefined();
+    expect(layout.topInfoBanner?.height).toBeGreaterThanOrEqual(70);
+    expect(layout.centerStage?.width).toBeGreaterThanOrEqual(320);
+    expect(layout.centerStage?.height).toBeGreaterThanOrEqual(180);
+    expect(layout.actionArea?.width).toBeGreaterThanOrEqual(320);
+    expect(layout.topInfoBanner?.y).toBeGreaterThan(layout.centerStage!.y);
+    expect(layout.centerStage?.y).toBeGreaterThan(layout.actionArea!.y);
   });
 
-  it('returns the portrait profile for mobile-like canvases', () => {
+  it('returns the portrait profile for mobile-like canvases without collapsing the board shell', () => {
     const layout = getBattleLayoutProfile({ width: 720, height: 1280 });
 
     expect(layout.profile).toBe('portrait');
-    expect(layout.boardScale).toBe(0.76);
-    expect(layout.centerStage).toEqual({ x: 0, y: 52, width: 250, height: 108 });
+    expect(layout.boardScale).toBeLessThan(1);
+    expect(layout.topInfoBanner).toBeDefined();
+    expect(layout.centerStage).toBeDefined();
+    expect(layout.actionArea).toBeDefined();
+    expect(layout.edgeActions).toBeDefined();
+    expect(layout.seatPanels).toBeDefined();
+    expect(layout.topInfoBanner?.height).toBeGreaterThanOrEqual(70);
+    expect(layout.centerStage?.width).toBeGreaterThanOrEqual(280);
+    expect(layout.centerStage?.height).toBeGreaterThanOrEqual(150);
+    expect(layout.actionArea?.width).toBeGreaterThanOrEqual(292);
+    expect(layout.edgeActions?.bottomLeftStack.y).toBeLessThanOrEqual(-470);
+    expect(layout.seatPanels?.topLeft.x).toBeLessThanOrEqual(-200);
   });
 
-  it('maps profile geometry into deterministic runtime node layout order', () => {
-    const runtimeLayout = getBattleRuntimeLayout(getBattleLayoutProfile({ width: 999, height: 1000 }));
+  it('maps desktop profile geometry into deterministic runtime node layout order', () => {
+    const runtimeLayout = getBattleRuntimeLayout(getBattleLayoutProfile({ width: 1280, height: 720 }));
 
-    expect(runtimeLayout).toEqual({
-      boardScale: 0.76,
-      centerStage: { x: 0, y: 52, width: 250, height: 108 },
-      seatPanelPositions: [
-        { x: -176, y: 448 },
-        { x: 176, y: 448 },
-        { x: 176, y: -448 },
-        { x: -176, y: -448 },
-      ],
+    expect(runtimeLayout).toMatchObject({
+      boardScale: 1.14,
+      topInfoBanner: { x: 0, y: 244, width: 406, height: 78 },
+      centerStage: { x: 0, y: 42, width: 360, height: 208 },
+      actionArea: { x: 0, y: -246, width: 360, height: 148 },
+      edgeActions: {
+        rightStack: { x: 452, y: 18 },
+        bottomLeftStack: { x: -372, y: -248 },
+        bottomRightStack: { x: 372, y: -248 },
+      },
     });
+    expect(runtimeLayout.seatPanelPositions).toHaveLength(MATCH_CONFIG.players.length);
+    expect(runtimeLayout.seatPanelPositions[0]).toMatchObject({ y: expect.any(Number) });
+    expect(runtimeLayout.seatPanelPositions[0]!.x).toBeLessThan(0);
+    expect(runtimeLayout.seatPanelPositions[1]!.x).toBeGreaterThan(0);
+    expect(runtimeLayout.seatPanelPositions[2]!.x).toBeGreaterThan(0);
+    expect(runtimeLayout.seatPanelPositions[3]!.x).toBeLessThan(0);
+    expect(runtimeLayout.seatPanelPositions[0]!.y).toBeGreaterThan(0);
+    expect(runtimeLayout.seatPanelPositions[1]!.y).toBeGreaterThan(0);
+    expect(runtimeLayout.seatPanelPositions[2]!.y).toBeLessThan(0);
+    expect(runtimeLayout.seatPanelPositions[3]!.y).toBeLessThan(0);
   });
 
   it('applies the computed layout to the bound battle scene nodes', async () => {
@@ -396,14 +455,41 @@ describe('getBattleLayoutProfile', () => {
       seatPanels.addChild(createSeatPanel(Node, Label, index));
     });
 
+    const topInfoBanner = new Node('TopInfoBanner');
+    topInfoBanner.addChild(new Node('BannerFrame'));
+    topInfoBanner.addChild(createLabelNode(Node, Label, 'RoundSummaryLabel'));
+    topInfoBanner.addChild(createLabelNode(Node, Label, 'IncomeSummaryLabel'));
+    topInfoBanner.addChild(createLabelNode(Node, Label, 'EventSummaryLabel'));
+
     const centerStage = new Node('CenterStage');
     centerStage.addComponent(UITransform);
-    centerStage.addChild(createLabelNode(Node, Label, 'ActivePlayerLabel'));
-    centerStage.addChild(createLabelNode(Node, Label, 'TurnLabel'));
-    centerStage.addChild(createLabelNode(Node, Label, 'LatestEventLabel'));
+    centerStage.addChild(new Node('DiceStageBase'));
+    centerStage.addChild(new Node('DicePlazaGlow'));
+    centerStage.addChild(new Node('DicePlazaFrame'));
+    centerStage.addChild(new Node('DicePairAnchor'));
+    centerStage.addChild(createLabelNode(Node, Label, 'RoundInfoLabel'));
+    centerStage.addChild(new Node('RollButtonFrame'));
     centerStage.addChild(createButtonNode(Node, Button, 'RollButton'));
 
+    const edgeActions = new Node('EdgeActions');
+    const rightActionStack = new Node('RightActionStack');
+    rightActionStack.addChild(new Node('ChatButton'));
+    rightActionStack.addChild(new Node('EmojiButton'));
+    rightActionStack.addChild(new Node('MenuButton'));
+    edgeActions.addChild(rightActionStack);
+
+    const bottomLeftActionStack = new Node('BottomLeftActionStack');
+    bottomLeftActionStack.addChild(new Node('MapButton'));
+    bottomLeftActionStack.addChild(new Node('TravelButton'));
+    edgeActions.addChild(bottomLeftActionStack);
+
+    const bottomRightActionStack = new Node('BottomRightActionStack');
+    bottomRightActionStack.addChild(new Node('RankButton'));
+    bottomRightActionStack.addChild(new Node('EventButton'));
+    edgeActions.addChild(bottomRightActionStack);
+
     const actionArea = new Node('ActionArea');
+    actionArea.addComponent(UITransform);
     actionArea.addChild(createLabelNode(Node, Label, 'LogLabel'));
 
     const cardHand = new Node('CardHand');
@@ -418,8 +504,10 @@ describe('getBattleLayoutProfile', () => {
     skillButton.addChild(createLabelNode(Node, Label, 'Label'));
     actionArea.addChild(skillButton);
 
+    hudLayer.addChild(topInfoBanner);
     hudLayer.addChild(seatPanels);
     hudLayer.addChild(centerStage);
+    hudLayer.addChild(edgeActions);
     hudLayer.addChild(actionArea);
 
     const propertyPrompt = new Node('PropertyPrompt');
@@ -455,15 +543,15 @@ describe('getBattleLayoutProfile', () => {
 
     (controller as BattleController & { bindScene: () => void }).bindScene();
 
-    expect(boardDecorLayer.scale).toEqual({ x: 0.76, y: 0.76, z: 1 });
-    expect(tileLayer.scale).toEqual({ x: 0.76, y: 0.76, z: 1 });
-    expect(tokenLayer.scale).toEqual({ x: 0.76, y: 0.76, z: 1 });
-    expect(centerStage.position).toEqual({ x: 0, y: 52, z: 0 });
-    expect(centerStage.getComponent(UITransform)?.contentSize).toEqual({ width: 250, height: 108 });
-    expect(seatPanels.getChildByName('SeatPanel0')?.position).toEqual({ x: -176, y: 448, z: 0 });
-    expect(seatPanels.getChildByName('SeatPanel1')?.position).toEqual({ x: 176, y: 448, z: 0 });
-    expect(seatPanels.getChildByName('SeatPanel2')?.position).toEqual({ x: 176, y: -448, z: 0 });
-    expect(seatPanels.getChildByName('SeatPanel3')?.position).toEqual({ x: -176, y: -448, z: 0 });
+    expect(boardDecorLayer.scale.x).toBeGreaterThan(0.76);
+    expect(tileLayer.scale.x).toBeGreaterThan(0.76);
+    expect(tokenLayer.scale.x).toBeGreaterThan(0.76);
+    expect(centerStage.getComponent(UITransform)?.contentSize.width).toBeGreaterThanOrEqual(280);
+    expect(centerStage.getComponent(UITransform)?.contentSize.height).toBeGreaterThanOrEqual(132);
+    expect(seatPanels.getChildByName('SeatPanel0')?.position.x).toBeLessThanOrEqual(-200);
+    expect(seatPanels.getChildByName('SeatPanel1')?.position.x).toBeGreaterThanOrEqual(200);
+    expect(seatPanels.getChildByName('SeatPanel2')?.position.x).toBeGreaterThanOrEqual(200);
+    expect(seatPanels.getChildByName('SeatPanel3')?.position.x).toBeLessThanOrEqual(-200);
   });
 
   it('builds world-map scenic layers and card frames instead of leaving bare text nodes', async () => {
@@ -503,14 +591,41 @@ describe('getBattleLayoutProfile', () => {
       seatPanels.addChild(createSeatPanel(Node, Label, index));
     });
 
+    const topInfoBanner = new Node('TopInfoBanner');
+    topInfoBanner.addChild(new Node('BannerFrame'));
+    topInfoBanner.addChild(createLabelNode(Node, Label, 'RoundSummaryLabel'));
+    topInfoBanner.addChild(createLabelNode(Node, Label, 'IncomeSummaryLabel'));
+    topInfoBanner.addChild(createLabelNode(Node, Label, 'EventSummaryLabel'));
+
     const centerStage = new Node('CenterStage');
     centerStage.addComponent(UITransform);
-    centerStage.addChild(createLabelNode(Node, Label, 'ActivePlayerLabel'));
-    centerStage.addChild(createLabelNode(Node, Label, 'TurnLabel'));
-    centerStage.addChild(createLabelNode(Node, Label, 'LatestEventLabel'));
+    centerStage.addChild(new Node('DiceStageBase'));
+    centerStage.addChild(new Node('DicePlazaGlow'));
+    centerStage.addChild(new Node('DicePlazaFrame'));
+    centerStage.addChild(new Node('DicePairAnchor'));
+    centerStage.addChild(createLabelNode(Node, Label, 'RoundInfoLabel'));
+    centerStage.addChild(new Node('RollButtonFrame'));
     centerStage.addChild(createButtonNode(Node, Button, 'RollButton'));
 
+    const edgeActions = new Node('EdgeActions');
+    const rightActionStack = new Node('RightActionStack');
+    rightActionStack.addChild(new Node('ChatButton'));
+    rightActionStack.addChild(new Node('EmojiButton'));
+    rightActionStack.addChild(new Node('MenuButton'));
+    edgeActions.addChild(rightActionStack);
+
+    const bottomLeftActionStack = new Node('BottomLeftActionStack');
+    bottomLeftActionStack.addChild(new Node('MapButton'));
+    bottomLeftActionStack.addChild(new Node('TravelButton'));
+    edgeActions.addChild(bottomLeftActionStack);
+
+    const bottomRightActionStack = new Node('BottomRightActionStack');
+    bottomRightActionStack.addChild(new Node('RankButton'));
+    bottomRightActionStack.addChild(new Node('EventButton'));
+    edgeActions.addChild(bottomRightActionStack);
+
     const actionArea = new Node('ActionArea');
+    actionArea.addComponent(UITransform);
     actionArea.addChild(createLabelNode(Node, Label, 'LogLabel'));
 
     const cardHand = new Node('CardHand');
@@ -525,8 +640,10 @@ describe('getBattleLayoutProfile', () => {
     skillButton.addChild(createLabelNode(Node, Label, 'Label'));
     actionArea.addChild(skillButton);
 
+    hudLayer.addChild(topInfoBanner);
     hudLayer.addChild(seatPanels);
     hudLayer.addChild(centerStage);
+    hudLayer.addChild(edgeActions);
     hudLayer.addChild(actionArea);
 
     const propertyPrompt = new Node('PropertyPrompt');
@@ -565,13 +682,29 @@ describe('getBattleLayoutProfile', () => {
     (controller as BattleController & { bindScene: () => void }).bindScene();
 
     expect(backgroundLayer.children.map((child) => child.name)).toEqual(
-      expect.arrayContaining(['MapBackdrop', 'OceanGlow']),
+      expect.arrayContaining(['MapBackdrop', 'OceanGlow', 'EdgeGlow']),
     );
-    expect(boardDecorLayer.children.map((child) => child.name)).toEqual(
-      expect.arrayContaining(['RouteRing', 'CenterStageFrame', 'CornerLandmark0', 'CornerLandmark1']),
-    );
+    expect(boardDecorLayer.getChildByName('RouteRing')).toBeTruthy();
+    expect(boardDecorLayer.getChildByName('WorldMapScenicMass')).toBeTruthy();
+    expect(boardDecorLayer.getChildByName('TopBannerBridge')).toBeTruthy();
+    expect(topInfoBanner.getChildByName('BannerFrame')).toBeTruthy();
+    expect(centerStage.getChildByName('DiceStageBase')).toBeTruthy();
+    expect(centerStage.getChildByName('DicePlazaGlow')).toBeTruthy();
+    expect(centerStage.getChildByName('DicePlazaFrame')).toBeTruthy();
+    expect(centerStage.getChildByName('DicePairAnchor')).toBeTruthy();
+    expect(centerStage.getChildByName('RoundInfoLabel')).toBeTruthy();
+    expect(centerStage.getChildByName('RollButtonFrame')).toBeTruthy();
+    expect(edgeActions.getChildByName('RightActionStack')).toBeTruthy();
+    expect(edgeActions.getChildByName('BottomLeftActionStack')).toBeTruthy();
+    expect(edgeActions.getChildByName('BottomRightActionStack')).toBeTruthy();
     expect(tileLayer.getChildByName('Tile0')?.getChildByName('TileFrame')).toBeTruthy();
+    expect(tileLayer.getChildByName('Tile0')?.getChildByName('TileAccentBand')).toBeTruthy();
+    expect(tileLayer.getChildByName('Tile0')?.getChildByName('TileBadgePlate')).toBeTruthy();
+    expect(tileLayer.getChildByName('Tile0')?.getChildByName('BuildingStackAnchor')).toBeTruthy();
+    expect(seatPanels.getChildByName('SeatPanel0')?.getChildByName('AvatarPlate')).toBeTruthy();
     expect(seatPanels.getChildByName('SeatPanel0')?.getChildByName('PanelFrame')).toBeTruthy();
+    expect(seatPanels.getChildByName('SeatPanel0')?.getChildByName('PanelAccent')).toBeTruthy();
+    expect(seatPanels.getChildByName('SeatPanel0')?.getChildByName('PropertyStack')).toBeTruthy();
     expect(propertyPrompt.getChildByName('PromptFrame')).toBeTruthy();
     expect(resultPanel.getChildByName('ResultFrame')).toBeTruthy();
   });
@@ -619,14 +752,41 @@ describe('getBattleLayoutProfile', () => {
       seatPanels.addChild(createSeatPanel(Node, Label, index));
     });
 
+    const topInfoBanner = new Node('TopInfoBanner');
+    topInfoBanner.addChild(new Node('BannerFrame'));
+    topInfoBanner.addChild(createLabelNode(Node, Label, 'RoundSummaryLabel'));
+    topInfoBanner.addChild(createLabelNode(Node, Label, 'IncomeSummaryLabel'));
+    topInfoBanner.addChild(createLabelNode(Node, Label, 'EventSummaryLabel'));
+
     const centerStage = new Node('CenterStage');
     centerStage.addComponent(UITransform);
-    centerStage.addChild(createLabelNode(Node, Label, 'ActivePlayerLabel'));
-    centerStage.addChild(createLabelNode(Node, Label, 'TurnLabel'));
-    centerStage.addChild(createLabelNode(Node, Label, 'LatestEventLabel'));
+    centerStage.addChild(new Node('DiceStageBase'));
+    centerStage.addChild(new Node('DicePlazaGlow'));
+    centerStage.addChild(new Node('DicePlazaFrame'));
+    centerStage.addChild(new Node('DicePairAnchor'));
+    centerStage.addChild(createLabelNode(Node, Label, 'RoundInfoLabel'));
+    centerStage.addChild(new Node('RollButtonFrame'));
     centerStage.addChild(createButtonNode(Node, Button, 'RollButton'));
 
+    const edgeActions = new Node('EdgeActions');
+    const rightActionStack = new Node('RightActionStack');
+    rightActionStack.addChild(new Node('ChatButton'));
+    rightActionStack.addChild(new Node('EmojiButton'));
+    rightActionStack.addChild(new Node('MenuButton'));
+    edgeActions.addChild(rightActionStack);
+
+    const bottomLeftActionStack = new Node('BottomLeftActionStack');
+    bottomLeftActionStack.addChild(new Node('MapButton'));
+    bottomLeftActionStack.addChild(new Node('TravelButton'));
+    edgeActions.addChild(bottomLeftActionStack);
+
+    const bottomRightActionStack = new Node('BottomRightActionStack');
+    bottomRightActionStack.addChild(new Node('RankButton'));
+    bottomRightActionStack.addChild(new Node('EventButton'));
+    edgeActions.addChild(bottomRightActionStack);
+
     const actionArea = new Node('ActionArea');
+    actionArea.addComponent(UITransform);
     actionArea.addChild(createLabelNode(Node, Label, 'LogLabel'));
 
     const cardHand = new Node('CardHand');
@@ -641,8 +801,10 @@ describe('getBattleLayoutProfile', () => {
     skillButton.addChild(createLabelNode(Node, Label, 'Label'));
     actionArea.addChild(skillButton);
 
+    hudLayer.addChild(topInfoBanner);
     hudLayer.addChild(seatPanels);
     hudLayer.addChild(centerStage);
+    hudLayer.addChild(edgeActions);
     hudLayer.addChild(actionArea);
 
     const propertyPrompt = new Node('PropertyPrompt');

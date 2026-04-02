@@ -4,10 +4,16 @@
 
 - Project: `fortune-board`
 - Document type: implementation design spec
-- Status: approved for implementation planning
+- Status: superseded by `2026-04-02-fortune-board-reference-image-full-screen-battle-design.md`
 - Date: `2026-04-02`
 - Scope: rebuild the current `Battle` scene toward a high-fidelity Tiantian-Fuweng-style world-map match surface
-- Related docs: `../../product/requirements.md`, `../../research/tiantian-fuweng-map-references/README.md`, `../plans/2026-04-01-fortune-board-high-fidelity-tianti-fuweng-roadmap.md`
+- Related docs: `../../product/requirements.md`, `../../research/tiantian-fuweng-map-references/README.md`, `../plans/2026-04-01-fortune-board-high-fidelity-tianti-fuweng-roadmap.md`, `./2026-04-02-fortune-board-reference-image-full-screen-battle-design.md`
+
+## Status Note
+
+This broader world-map direction document remains as project history.
+
+The current canonical Battle-scene visual target is `2026-04-02-fortune-board-reference-image-full-screen-battle-design.md`.
 
 ## Goal
 

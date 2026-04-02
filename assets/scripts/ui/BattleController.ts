@@ -610,11 +610,30 @@ export class BattleController extends Component {
     layoutProfile: BattleLayoutProfile,
     tilePositions: Array<{ x: number; y: number }>,
   ): void {
+    const scenicMassWidth = layoutProfile === 'portrait' ? 720 : 820;
+    const scenicMassHeight = layoutProfile === 'portrait' ? 440 : 540;
+    const scenicMass = this.ensureGraphicChild(layer, 'WorldMapScenicMass', scenicMassWidth, scenicMassHeight);
+    scenicMass.setPosition(0, layoutProfile === 'portrait' ? 18 : 8, 0);
+    this.paintDiamond(scenicMass, scenicMassWidth, scenicMassHeight, '#2e6e63', '#8cc3a8');
+
     const routeRing = this.ensureGraphicChild(layer, 'RouteRing', 920, 620);
     this.paintRouteRing(routeRing, tilePositions, layoutProfile);
 
-    const centerStageFrame = this.ensureGraphicChild(layer, 'CenterStageFrame', 350, 220);
-    this.paintRoundedRect(centerStageFrame, 350, 220, '#efe8d2', '#c9b37f', 40);
+    const centerStageFrame = this.ensureGraphicChild(
+      layer,
+      'CenterStageFrame',
+      layoutProfile === 'portrait' ? 360 : 430,
+      layoutProfile === 'portrait' ? 220 : 260,
+    );
+    centerStageFrame.setPosition(0, layoutProfile === 'portrait' ? 36 : 8, 0);
+    this.paintRoundedRect(
+      centerStageFrame,
+      layoutProfile === 'portrait' ? 360 : 430,
+      layoutProfile === 'portrait' ? 220 : 260,
+      '#efe8d2',
+      '#c9b37f',
+      40,
+    );
 
     const landmarkPositions = [
       { x: -318, y: 204 },
@@ -641,13 +660,22 @@ export class BattleController extends Component {
       const frame = this.ensureGraphicChild(panelNode, 'PanelFrame', panelWidth, panelHeight);
       this.paintRoundedRect(frame, panelWidth, panelHeight, '#f4ecd6', '#c59d56', 24);
 
+      const accent = this.ensureGraphicChild(panelNode, 'PanelAccent', panelWidth - 20, 18);
+      accent.setPosition(0, panelHeight / 2 - 16, 0);
+      this.paintRoundedRect(accent, panelWidth - 20, 18, '#f2d58a', '#d6b166', 10);
+
+      const statStackHeight = layoutProfile === 'portrait' ? 48 : 54;
+      const statStack = this.ensureGraphicChild(panelNode, 'PanelStatStack', panelWidth - 28, statStackHeight);
+      statStack.setPosition(0, -10, 0);
+      this.paintRoundedRect(statStack, panelWidth - 28, statStackHeight, '#fff7e2', '#d8bf8a', 18);
+
       const titleLabel = this.getRequiredLabel(panelNode, 'TitleLabel');
       const statsLabel = this.getRequiredLabel(panelNode, 'StatsLabel');
       const stateLabel = this.getRequiredLabel(panelNode, 'StateLabel');
 
       titleLabel.node.setPosition(0, 28, 0);
-      statsLabel.node.setPosition(0, -4, 0);
-      stateLabel.node.setPosition(0, -34, 0);
+      statsLabel.node.setPosition(0, -2, 0);
+      stateLabel.node.setPosition(0, -24, 0);
       titleLabel.fontSize = layoutProfile === 'portrait' ? 18 : 20;
       statsLabel.fontSize = layoutProfile === 'portrait' ? 14 : 15;
       stateLabel.fontSize = layoutProfile === 'portrait' ? 13 : 14;
@@ -659,16 +687,41 @@ export class BattleController extends Component {
 
   private decorateCenterStage(centerStage: Node, layoutProfile: BattleLayoutProfile): void {
     const transform = centerStage.getComponent(UITransform) ?? centerStage.addComponent(UITransform);
-    const width = transform.contentSize.width || (layoutProfile === 'portrait' ? 250 : 320);
-    const height = transform.contentSize.height || (layoutProfile === 'portrait' ? 108 : 132);
+    const width =
+      transform.contentSize.width || (layoutProfile === 'portrait' ? 288 : layoutProfile === 'narrow' ? 336 : 380);
+    const height =
+      transform.contentSize.height || (layoutProfile === 'portrait' ? 136 : layoutProfile === 'narrow' ? 168 : 188);
     transform.setContentSize(width, height);
 
-    const frame = this.ensureGraphicChild(centerStage, 'StageFrame', width, height);
-    this.paintRoundedRect(frame, width, height, '#fbf3dc', '#c9ab68', 30);
+    const glow = this.ensureGraphicChild(centerStage, 'DicePlazaGlow', width + 28, height + 28);
+    glow.setPosition(0, -4, 0);
+    this.paintDiamond(glow, width + 8, height + 8, '#f2d58a', '#f9ebbc');
 
-    this.getRequiredLabel(centerStage, 'ActivePlayerLabel').node.setPosition(0, 28, 0);
-    this.getRequiredLabel(centerStage, 'TurnLabel').node.setPosition(0, -4, 0);
-    this.getRequiredLabel(centerStage, 'LatestEventLabel').node.setPosition(0, -36, 0);
+    const frame = this.ensureGraphicChild(centerStage, 'DicePlazaFrame', width, height);
+    this.paintRoundedRect(frame, width, height, '#fbf3dc', '#c9ab68', 34);
+
+    const rollButton = this.getRequiredChild(centerStage, 'RollButton');
+    const rollButtonFrame = this.ensureGraphicChild(
+      centerStage,
+      'RollButtonFrame',
+      layoutProfile === 'portrait' ? 132 : 156,
+      46,
+    );
+    rollButtonFrame.setPosition(0, layoutProfile === 'portrait' ? -48 : -66, 0);
+    this.paintRoundedRect(rollButtonFrame, layoutProfile === 'portrait' ? 132 : 156, 46, '#ffe8a8', '#cf9b45', 20);
+    rollButton.setPosition(0, layoutProfile === 'portrait' ? -48 : -66, 0);
+
+    this.getRequiredLabel(centerStage, 'ActivePlayerLabel').node.setPosition(
+      0,
+      layoutProfile === 'portrait' ? 34 : 46,
+      0,
+    );
+    this.getRequiredLabel(centerStage, 'TurnLabel').node.setPosition(0, 8, 0);
+    this.getRequiredLabel(centerStage, 'LatestEventLabel').node.setPosition(
+      0,
+      layoutProfile === 'portrait' ? -26 : -38,
+      0,
+    );
   }
 
   private decorateActionArea(actionArea: Node, layoutProfile: BattleLayoutProfile): void {
@@ -689,7 +742,12 @@ export class BattleController extends Component {
 
     const skillButtonRoot = this.getRequiredChild(actionArea, 'SkillButton');
     skillButtonRoot.setPosition(layoutProfile === 'portrait' ? 76 : 92, layoutProfile === 'portrait' ? -46 : -52, 0);
-    const skillFrame = this.ensureGraphicChild(skillButtonRoot, 'SkillFrame', layoutProfile === 'portrait' ? 110 : 126, 72);
+    const skillFrame = this.ensureGraphicChild(
+      skillButtonRoot,
+      'SkillFrame',
+      layoutProfile === 'portrait' ? 110 : 126,
+      72,
+    );
     this.paintRoundedRect(skillFrame, layoutProfile === 'portrait' ? 110 : 126, 72, '#fff7df', '#c8aa5b', 18);
   }
 
@@ -707,17 +765,37 @@ export class BattleController extends Component {
       const titleLabel = this.getRequiredLabel(tileNode, 'TitleLabel');
       const supportingLabel = this.getRequiredLabel(tileNode, 'SupportingLabel');
       const badgeLabel = this.getRequiredLabel(tileNode, 'BadgeLabel');
-      titleLabel.node.setPosition(0, 14, 0);
-      supportingLabel.node.setPosition(0, -12, 0);
-      badgeLabel.node.setPosition(0, 32, 0);
+      titleLabel.node.setPosition(0, 10, 0);
+      supportingLabel.node.setPosition(0, -14, 0);
+      badgeLabel.node.setPosition(0, 24, 0);
       titleLabel.fontSize = layoutProfile === 'portrait' ? 14 : 15;
       supportingLabel.fontSize = layoutProfile === 'portrait' ? 11 : 12;
       badgeLabel.fontSize = layoutProfile === 'portrait' ? 12 : 13;
-      if (index % 2 === 0) {
-        titleLabel.color = this.colorFromHex('#2f4050');
-        supportingLabel.color = this.colorFromHex('#5c6e7d');
-      }
+
+      const presentation = getTilePresentation(this.match, index);
+      this.paintTileCardDecor(tileNode, presentation.accentHex);
+      titleLabel.color = this.colorFromHex(presentation.accentHex);
+      supportingLabel.color = this.colorFromHex(presentation.accentHex);
+      badgeLabel.color = this.colorFromHex(presentation.accentHex);
     });
+  }
+
+  private paintTileCardDecor(tileNode: Node, accentHex: string): void {
+    const transform = tileNode.getComponent(UITransform) ?? tileNode.addComponent(UITransform);
+    const tileWidth = transform.contentSize.width || 124;
+    const tileHeight = transform.contentSize.height || 74;
+    const isPortrait = tileHeight <= 66;
+
+    const accentBandHeight = isPortrait ? 16 : 18;
+    const accentBand = this.ensureGraphicChild(tileNode, 'TileAccentBand', tileWidth - 18, accentBandHeight);
+    accentBand.setPosition(0, tileHeight / 2 - 14, 0);
+    this.paintRoundedRect(accentBand, tileWidth - 18, accentBandHeight, accentHex, '#fff6dd', 10);
+
+    const badgePlateWidth = isPortrait ? 56 : 64;
+    const badgePlateHeight = isPortrait ? 18 : 20;
+    const badgePlate = this.ensureGraphicChild(tileNode, 'TileBadgePlate', badgePlateWidth, badgePlateHeight);
+    badgePlate.setPosition(0, isPortrait ? 24 : 26, 0);
+    this.paintRoundedRect(badgePlate, badgePlateWidth, badgePlateHeight, '#fff8ea', accentHex, 12);
   }
 
   private decorateTokenNodes(): void {
@@ -764,7 +842,10 @@ export class BattleController extends Component {
 
     const transform = node.getComponent(UITransform) ?? node.addComponent(UITransform);
     transform.setContentSize(width, height);
-    if ('setSiblingIndex' in node && typeof (node as Node & { setSiblingIndex?: (index: number) => void }).setSiblingIndex === 'function') {
+    if (
+      'setSiblingIndex' in node &&
+      typeof (node as Node & { setSiblingIndex?: (index: number) => void }).setSiblingIndex === 'function'
+    ) {
       (node as Node & { setSiblingIndex: (index: number) => void }).setSiblingIndex(0);
     }
     return node;
@@ -774,7 +855,14 @@ export class BattleController extends Component {
     return node.getComponent(Graphics) ?? node.addComponent(Graphics);
   }
 
-  private paintRoundedRect(node: Node, width: number, height: number, fillHex: string, strokeHex: string, radius: number): void {
+  private paintRoundedRect(
+    node: Node,
+    width: number,
+    height: number,
+    fillHex: string,
+    strokeHex: string,
+    radius: number,
+  ): void {
     const graphics = this.ensureGraphics(node) as Graphics & {
       fillColor?: Color;
       lineWidth?: number;
@@ -808,7 +896,11 @@ export class BattleController extends Component {
     graphics.stroke();
   }
 
-  private paintRouteRing(node: Node, tilePositions: Array<{ x: number; y: number }>, layoutProfile: BattleLayoutProfile): void {
+  private paintRouteRing(
+    node: Node,
+    tilePositions: Array<{ x: number; y: number }>,
+    layoutProfile: BattleLayoutProfile,
+  ): void {
     const graphics = this.ensureGraphics(node) as Graphics & {
       lineWidth?: number;
       strokeColor?: Color;
@@ -879,6 +971,7 @@ export class BattleController extends Component {
       titleLabel.string = presentation.title;
       supportingLabel.string = presentation.supportingLabel;
       badgeLabel.string = presentation.badgeLabel;
+      this.paintTileCardDecor(tileNode, presentation.accentHex);
       titleLabel.color = this.colorFromHex(presentation.accentHex);
       supportingLabel.color = this.colorFromHex(presentation.accentHex);
       badgeLabel.color = this.colorFromHex(presentation.accentHex);

@@ -48,13 +48,13 @@ export function getBattleLayoutProfile(viewport: { height: number; width: number
   if (aspect >= 1.45) {
     return {
       profile: 'desktop',
-      boardScale: 1,
-      centerStage: { x: 0, y: 0, width: 320, height: 132 },
+      boardScale: 1.08,
+      centerStage: { x: 0, y: 8, width: 380, height: 188 },
       seatPanels: {
-        topLeft: { x: -360, y: 216 },
-        topRight: { x: 360, y: 216 },
-        bottomRight: { x: 360, y: -156 },
-        bottomLeft: { x: -360, y: -156 },
+        topLeft: { x: -396, y: 228 },
+        topRight: { x: 396, y: 228 },
+        bottomRight: { x: 396, y: -188 },
+        bottomLeft: { x: -396, y: -188 },
       },
     };
   }
@@ -62,26 +62,26 @@ export function getBattleLayoutProfile(viewport: { height: number; width: number
   if (aspect >= 1) {
     return {
       profile: 'narrow',
-      boardScale: 0.88,
-      centerStage: { x: 0, y: -12, width: 280, height: 120 },
+      boardScale: 0.98,
+      centerStage: { x: 0, y: 0, width: 336, height: 168 },
       seatPanels: {
-        topLeft: { x: -286, y: 224 },
-        topRight: { x: 286, y: 224 },
-        bottomRight: { x: 286, y: -214 },
-        bottomLeft: { x: -286, y: -214 },
+        topLeft: { x: -324, y: 232 },
+        topRight: { x: 324, y: 232 },
+        bottomRight: { x: 324, y: -236 },
+        bottomLeft: { x: -324, y: -236 },
       },
     };
   }
 
   return {
     profile: 'portrait',
-    boardScale: 0.76,
-    centerStage: { x: 0, y: 52, width: 250, height: 108 },
+    boardScale: 0.84,
+    centerStage: { x: 0, y: 36, width: 288, height: 136 },
     seatPanels: {
-      topLeft: { x: -176, y: 448 },
-      topRight: { x: 176, y: 448 },
-      bottomRight: { x: 176, y: -448 },
-      bottomLeft: { x: -176, y: -448 },
+      topLeft: { x: -212, y: 436 },
+      topRight: { x: 212, y: 436 },
+      bottomRight: { x: 212, y: -436 },
+      bottomLeft: { x: -212, y: -436 },
     },
   };
 }

@@ -13,6 +13,8 @@ import { BOARD_CONFIG } from '../../assets/scripts/data/board-config';
 import { MATCH_CONFIG } from '../../assets/scripts/data/match-config';
 import * as battlePresentation from '../../assets/scripts/ui/battle-presentation';
 
+type Match = ReturnType<typeof createMatch>;
+
 type BattleHudFlowPresentation = {
   rollButtonEnabled: boolean;
   roleSelection: {
@@ -31,18 +33,53 @@ type BattleHudFlowPresentation = {
   };
 };
 
-function getHudFlowPresentation(match: Parameters<Exclude<typeof getBattleHudFlowPresentation, undefined>>[0]) {
+type TopInfoBannerPresentation = {
+  accentHex: string;
+  eventLabel: string;
+  incomeLabel: string;
+  roundLabel: string;
+};
+
+function getHudFlowPresentation(match: Match) {
   expect(getBattleHudFlowPresentation).toBeTypeOf('function');
   return getBattleHudFlowPresentation!(match);
 }
 
+function getTopBannerPresentation(match: Match) {
+  expect(getTopInfoBannerPresentation).toBeTypeOf('function');
+  return getTopInfoBannerPresentation!(match);
+}
+
 const getBattleHudFlowPresentation = (battlePresentation as Record<string, unknown>).getBattleHudFlowPresentation as
-  | ((match: ReturnType<typeof createMatch>) => BattleHudFlowPresentation)
+  | ((match: Match) => BattleHudFlowPresentation)
+  | undefined;
+
+const getTopInfoBannerPresentation = (battlePresentation as Record<string, unknown>).getTopInfoBannerPresentation as
+  | ((match: Match) => TopInfoBannerPresentation)
   | undefined;
 
 function createAssignedMatch() {
   return completeRoleSelectionFlow(openRoleSelectionFlow(createMatch(BOARD_CONFIG, MATCH_CONFIG)), 'role-toll');
 }
+
+describe('getTopInfoBannerPresentation', () => {
+  it('surfaces the role-selection prompt before the match starts', () => {
+    const match = openRoleSelectionFlow(createMatch(BOARD_CONFIG, MATCH_CONFIG));
+
+    expect(getTopBannerPresentation(match)).toMatchObject({
+      eventLabel: 'Choose a role',
+    });
+  });
+
+  it('surfaces round copy and the active player accent during the active turn', () => {
+    const match = beginTurnFlow(createAssignedMatch());
+
+    expect(getTopBannerPresentation(match)).toMatchObject({
+      roundLabel: 'Round 0',
+      accentHex: match.players[match.activePlayerIndex]!.color,
+    });
+  });
+});
 
 describe('getBattleHudFlowPresentation', () => {
   it('shows every available role option only during role selection', () => {

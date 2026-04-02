@@ -88,14 +88,20 @@ function getCanvasChildNames(): string[] {
 }
 
 describe('battle art contract', () => {
-  it('declares the scenic assets required by the polished board', () => {
-    expect(BATTLE_ART_ASSETS).toEqual({
-      background: 'battle-polish/amusement-map-background',
-      centerStage: 'battle-polish/amusement-center-stage',
-      seatPanelFrame: 'battle-polish/amusement-seat-panel',
-      tileFrame: 'battle-polish/amusement-tile-frame',
-      propertyPromptFrame: 'battle-polish/amusement-prompt-frame',
-      resultPanelFrame: 'battle-polish/amusement-result-frame',
+  it('declares battle art assets under world-map-oriented identifiers', () => {
+    expect(BATTLE_ART_ASSETS).toMatchObject({
+      background: expect.stringMatching(/^battle-polish\//),
+      topBanner: expect.stringMatching(/^battle-polish\//),
+      centerStage: expect.stringMatching(/^battle-polish\//),
+      edgeActionShell: expect.stringMatching(/^battle-polish\//),
+      seatPanelFrame: expect.stringMatching(/^battle-polish\//),
+      tileFrame: expect.stringMatching(/^battle-polish\//),
+      propertyPromptFrame: expect.stringMatching(/^battle-polish\//),
+      resultPanelFrame: expect.stringMatching(/^battle-polish\//),
+    });
+
+    Object.values(BATTLE_ART_ASSETS).forEach((assetIdentifier) => {
+      expect(assetIdentifier).not.toContain('amusement');
     });
   });
 
@@ -124,15 +130,49 @@ describe('battle art contract', () => {
   it('prebuilds the stable polished battle UI skeleton inside Battle.scene', () => {
     const sceneRecords = readSceneRecords();
 
-    expect(getChildNames(sceneRecords, 'HudLayer')).toEqual(['SeatPanels', 'CenterStage', 'ActionArea']);
+    expect(getChildNames(sceneRecords, 'BackgroundLayer')).toEqual(['MapBackdrop', 'OceanGlow', 'EdgeGlow']);
+    expect(getChildNames(sceneRecords, 'BoardDecorLayer')).toEqual([
+      'WorldMapScenicMass',
+      'RouteRing',
+      'CenterStageFrame',
+      'TopBannerBridge',
+      'CornerLandmark0',
+      'CornerLandmark1',
+      'CornerLandmark2',
+      'CornerLandmark3',
+    ]);
+    expect(getChildNames(sceneRecords, 'HudLayer')).toEqual([
+      'TopInfoBanner',
+      'SeatPanels',
+      'CenterStage',
+      'EdgeActions',
+      'ActionArea',
+    ]);
+    expect(getChildNames(sceneRecords, 'TopInfoBanner')).toEqual([
+      'BannerFrame',
+      'RoundSummaryLabel',
+      'IncomeSummaryLabel',
+      'EventSummaryLabel',
+    ]);
     expect(getChildNames(sceneRecords, 'OverlayLayer')).toEqual(['PropertyPrompt', 'ResultPanel', 'RoleSelection']);
     expect(getChildNames(sceneRecords, 'ActionArea')).toEqual(['LogLabel', 'CardHand', 'SkillButton']);
     expect(getChildNames(sceneRecords, 'CenterStage')).toEqual([
-      'ActivePlayerLabel',
-      'TurnLabel',
-      'LatestEventLabel',
+      'DiceStageBase',
+      'DicePlazaGlow',
+      'DicePlazaFrame',
+      'DicePairAnchor',
+      'RoundInfoLabel',
+      'RollButtonFrame',
       'RollButton',
     ]);
+    expect(getChildNames(sceneRecords, 'EdgeActions')).toEqual([
+      'RightActionStack',
+      'BottomLeftActionStack',
+      'BottomRightActionStack',
+    ]);
+    expect(getChildNames(sceneRecords, 'RightActionStack')).toEqual(['ChatButton', 'EmojiButton', 'MenuButton']);
+    expect(getChildNames(sceneRecords, 'BottomLeftActionStack')).toEqual(['MapButton', 'TravelButton']);
+    expect(getChildNames(sceneRecords, 'BottomRightActionStack')).toEqual(['RankButton', 'EventButton']);
     expect(getChildNames(sceneRecords, 'CardHand')).toEqual(['TitleLabel', 'Cards']);
     expect(getChildNames(sceneRecords, 'SkillButton')).toEqual(['Label']);
     expect(getChildNames(sceneRecords, 'PropertyPrompt')).toEqual([
@@ -147,12 +187,29 @@ describe('battle art contract', () => {
     const expectedSeatPanelNames = MATCH_CONFIG.players.map((_player, index) => `SeatPanel${index}`);
     expect(getChildNames(sceneRecords, 'SeatPanels')).toEqual(expectedSeatPanelNames);
     expectedSeatPanelNames.forEach((seatPanelName) => {
-      expect(getChildNames(sceneRecords, seatPanelName)).toEqual(['TitleLabel', 'StatsLabel', 'StateLabel']);
+      expect(getChildNames(sceneRecords, seatPanelName)).toEqual([
+        'AvatarPlate',
+        'PanelFrame',
+        'PanelAccent',
+        'PropertyStack',
+        'PlayerNameLabel',
+        'CashLabel',
+        'AssetLabel',
+        'StatusBadge',
+      ]);
     });
     const expectedTileNames = BOARD_CONFIG.map((_tile, index) => `Tile${index}`);
     expect(getChildNames(sceneRecords, 'TileLayer')).toEqual(expectedTileNames);
     expectedTileNames.forEach((tileName) => {
-      expect(getChildNames(sceneRecords, tileName)).toEqual(['TitleLabel', 'SupportingLabel', 'BadgeLabel']);
+      expect(getChildNames(sceneRecords, tileName)).toEqual([
+        'TileFrame',
+        'TileAccentBand',
+        'TileBadgePlate',
+        'BuildingStackAnchor',
+        'TitleLabel',
+        'SupportingLabel',
+        'BadgeLabel',
+      ]);
     });
     const expectedTokenNames = MATCH_CONFIG.players.map((_player, index) => `Token${index}`);
     expect(getChildNames(sceneRecords, 'TokenLayer')).toEqual(expectedTokenNames);

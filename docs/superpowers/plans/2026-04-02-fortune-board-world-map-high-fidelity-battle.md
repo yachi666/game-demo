@@ -14,10 +14,10 @@
 
 - Project: `fortune-board`
 - Document type: implementation plan
-- Status: ready for execution
+- Status: retained as an older execution plan for the superseded world-map target; replacement planning is required for the newer reference-image full-screen direction
 - Date: `2026-04-02`
 - Depends on: `../specs/2026-04-02-fortune-board-world-map-high-fidelity-battle-design.md`
-- Related docs: `../../product/requirements.md`, `./2026-04-01-fortune-board-high-fidelity-tianti-fuweng-roadmap.md`
+- Related docs: `../../product/requirements.md`, `./2026-04-01-fortune-board-high-fidelity-tianti-fuweng-roadmap.md`, `../specs/2026-04-02-fortune-board-reference-image-full-screen-battle-design.md`
 
 ## File Surface
 

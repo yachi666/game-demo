@@ -6,14 +6,16 @@ This folder contains validated delivery documents that turn approved product dir
 
 - [Specs Index](./specs/README.md): approved design documents for concrete implementation slices.
 - [Fortune Board City Park Map Rework Design](./specs/2026-03-28-fortune-board-city-park-map-rework-design.md): proposed design for upgrading the Battle scene into a more product-like city-park competition board.
-- [Fortune Board World Map High-Fidelity Battle Design](./specs/2026-04-02-fortune-board-world-map-high-fidelity-battle-design.md): canonical visual-design spec for rebuilding the Battle scene toward a high-fidelity Tiantian-Fuweng-style world-map match surface.
+- [Fortune Board Reference Image Full-Screen Battle Design](./specs/2026-04-02-fortune-board-reference-image-full-screen-battle-design.md): canonical visual-design spec for rebuilding Battle toward the user-provided full-screen reference image with denser HUD, board, and edge-action structure.
+- [Fortune Board World Map High-Fidelity Battle Design](./specs/2026-04-02-fortune-board-world-map-high-fidelity-battle-design.md): superseded predecessor spec that established the broader world-map direction before the tighter reference-image target.
 - [Fortune Board Bright Amusement Map Polish Design](./specs/2026-03-29-fortune-board-bright-amusement-map-polish-design.md): superseded visual-direction spec from the earlier bright-amusement branch of the project.
 
 ## Plans
 
 - [Plans Index](./plans/README.md): implementation plans created after a spec is approved and reviewed.
 - [Fortune Board High-Fidelity Tiantian Fuweng Roadmap Implementation Plan](./plans/2026-04-01-fortune-board-high-fidelity-tianti-fuweng-roadmap.md): current roadmap for shifting delivery priority toward high-fidelity gameplay recreation, then feel, presentation, and product-shell phases.
-- [Fortune Board World Map High-Fidelity Battle Implementation Plan](./plans/2026-04-02-fortune-board-world-map-high-fidelity-battle.md): canonical execution plan for rebuilding the Battle scene toward a near-original world-map board surface.
+- [Fortune Board Reference Image Full-Screen Battle Implementation Plan](./plans/2026-04-02-fortune-board-reference-image-full-screen-battle.md): current execution plan for rebuilding Battle toward the user-provided reference image with a denser full-screen shell, richer corner HUDs, and stronger edge-action structure.
+- [Fortune Board World Map High-Fidelity Battle Implementation Plan](./plans/2026-04-02-fortune-board-world-map-high-fidelity-battle.md): older execution plan for the superseded world-map target; retained as project history after the newer reference-image full-screen direction.
 - [Fortune Board City Park Map Rework Implementation Plan](./plans/2026-03-28-fortune-board-city-park-map-rework.md): execution plan for the next Battle-scene presentation and pacing upgrade.
 - [Fortune Board Bright Amusement Map Polish Implementation Plan](./plans/2026-03-29-fortune-board-bright-amusement-map-polish.md): superseded original greenfield plan from the abandoned bright-amusement direction.
 - [Fortune Board Battle Scene Visual Recovery Implementation Plan](./plans/2026-04-01-fortune-board-battle-scene-visual-recovery.md): superseded recovery plan from the abandoned bright-amusement direction.

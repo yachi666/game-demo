@@ -92,7 +92,7 @@ Create `docs/superpowers/plans/2026-04-01-fortune-board-high-fidelity-tianti-fuw
 ```md
 - a why section explaining the goal change
 - a scope section separating gameplay fidelity from protected-expression limits
-- phased tasks for gameplay foundation, feel tuning, presentation polish, and product shell work
+- phased tasks for gameplay foundation, world-map Battle-scene reconstruction, later feel tuning, and product shell work
 ```
 
 - [ ] **Step 3: Update every relevant docs index in the same change**
@@ -275,7 +275,75 @@ git add assets/scripts/gameplay/cards.ts assets/scripts/gameplay/skills.ts asset
 git commit -m "feat: make cards skills and events core gameplay"
 ```
 
-## Task 4: Tune feel, pacing, and AI for a more Tiantian-Fuweng-like match flow
+## Task 4: Rebuild the world-map battle presentation before later feel tuning passes
+
+**Files:**
+- Modify: `assets/scenes/Battle.scene`
+- Modify: `assets/scripts/ui/BattleController.ts`
+- Modify: `assets/scripts/ui/HudController.ts`
+- Modify: `assets/scripts/ui/CardHandController.ts`
+- Modify: `assets/scripts/ui/SkillButtonController.ts`
+- Modify: `assets/scripts/ui/RoleSelectionController.ts`
+- Modify: `tests/ui/battle-art.test.ts`
+- Create: `tests/ui/battle-hud-flow.test.ts`
+
+- [ ] **Step 1: Write failing UI-contract tests for the richer gameplay HUD**
+
+Add checks such as:
+
+```ts
+it('renders enough seat, hand, event, and state surfaces for the richer gameplay loop', () => {
+  // assert battle scene roots and required labels/buttons exist
+});
+
+it('keeps event feedback visible without hiding the active turn controls', () => {
+  // assert UI state contract after deterministic event resolution
+});
+```
+
+- [ ] **Step 2: Run the focused UI tests**
+
+Run:
+
+```bash
+npm test -- tests/ui/battle-art.test.ts
+npm test -- tests/ui/battle-hud-flow.test.ts
+```
+
+Expected: FAIL until the battle scene can expose the larger rules surface cleanly.
+
+- [ ] **Step 3: Implement the minimal scene and controller updates**
+
+Keep the UI aligned with the rules:
+
+```ts
+hud.latestEventLabel.string = latestEventSummary;
+hud.turnLabel.string = `Turn ${match.turnCount + 1}`;
+hud.activeRoleLabel.string = currentRoleName;
+```
+
+and ensure the scene has stable nodes for cards, skills, event readouts, and property details.
+
+- [ ] **Step 4: Run the UI and gameplay regression tests**
+
+Run:
+
+```bash
+npm test -- tests/ui/battle-art.test.ts
+npm test -- tests/ui/battle-hud-flow.test.ts
+npm test -- tests/core/turn-flow.test.ts
+```
+
+Expected: PASS with a stable richer gameplay presentation surface.
+
+- [ ] **Step 5: Commit the battle HUD upgrade**
+
+```bash
+git add assets/scenes/Battle.scene assets/scripts/ui/BattleController.ts assets/scripts/ui/HudController.ts assets/scripts/ui/CardHandController.ts assets/scripts/ui/SkillButtonController.ts assets/scripts/ui/RoleSelectionController.ts tests/ui/battle-art.test.ts tests/ui/battle-hud-flow.test.ts tests/core/turn-flow.test.ts
+git commit -m "feat: rebuild battle ui toward world-map fidelity"
+```
+
+## Task 5: Tune feel, pacing, and AI for a more Tiantian-Fuweng-like match flow
 
 **Files:**
 - Modify: `assets/scripts/ai/decide-card.ts`
@@ -341,74 +409,6 @@ Expected: PASS with simple but more lifelike opponent behavior.
 ```bash
 git add assets/scripts/ai/decide-card.ts assets/scripts/ai/decide-skill.ts assets/scripts/ai/decide-purchase.ts assets/scripts/data/match-config.ts assets/scripts/data/card-config.ts assets/scripts/data/role-config.ts tests/ai/decide-card.test.ts tests/ai/decide-skill.test.ts tests/ai/decision-priority.test.ts tests/core/turn-flow.test.ts
 git commit -m "feat: tune ai and pacing for richer matches"
-```
-
-## Task 5: Upgrade the battle presentation to support the richer rules surface
-
-**Files:**
-- Modify: `assets/scenes/Battle.scene`
-- Modify: `assets/scripts/ui/BattleController.ts`
-- Modify: `assets/scripts/ui/HudController.ts`
-- Modify: `assets/scripts/ui/CardHandController.ts`
-- Modify: `assets/scripts/ui/SkillButtonController.ts`
-- Modify: `assets/scripts/ui/RoleSelectionController.ts`
-- Modify: `tests/ui/battle-art.test.ts`
-- Create: `tests/ui/battle-hud-flow.test.ts`
-
-- [ ] **Step 1: Write failing UI-contract tests for the richer gameplay HUD**
-
-Add checks such as:
-
-```ts
-it('renders enough seat, hand, event, and state surfaces for the richer gameplay loop', () => {
-  // assert battle scene roots and required labels/buttons exist
-});
-
-it('keeps event feedback visible without hiding the active turn controls', () => {
-  // assert UI state contract after deterministic event resolution
-});
-```
-
-- [ ] **Step 2: Run the focused UI tests**
-
-Run:
-
-```bash
-npm test -- tests/ui/battle-art.test.ts
-npm test -- tests/ui/battle-hud-flow.test.ts
-```
-
-Expected: FAIL until the battle scene can expose the larger rules surface cleanly.
-
-- [ ] **Step 3: Implement the minimal scene and controller updates**
-
-Keep the UI aligned with the rules:
-
-```ts
-hud.latestEventLabel.string = latestEventSummary;
-hud.turnLabel.string = `Turn ${match.turnCount + 1}`;
-hud.activeRoleLabel.string = currentRoleName;
-```
-
-and ensure the scene has stable nodes for cards, skills, event readouts, and property details.
-
-- [ ] **Step 4: Run the UI and gameplay regression tests**
-
-Run:
-
-```bash
-npm test -- tests/ui/battle-art.test.ts
-npm test -- tests/ui/battle-hud-flow.test.ts
-npm test -- tests/core/turn-flow.test.ts
-```
-
-Expected: PASS with a stable richer gameplay presentation surface.
-
-- [ ] **Step 5: Commit the battle HUD upgrade**
-
-```bash
-git add assets/scenes/Battle.scene assets/scripts/ui/BattleController.ts assets/scripts/ui/HudController.ts assets/scripts/ui/CardHandController.ts assets/scripts/ui/SkillButtonController.ts assets/scripts/ui/RoleSelectionController.ts tests/ui/battle-art.test.ts tests/ui/battle-hud-flow.test.ts tests/core/turn-flow.test.ts
-git commit -m "feat: upgrade battle ui for richer gameplay"
 ```
 
 ## Task 6: Add the product-shell phase without derailing gameplay fidelity
@@ -482,8 +482,8 @@ git commit -m "feat: add lobby and shell flow"
 - The PRD repositioning is covered by Task 1.
 - The shift from tiny prototype assumptions to a larger gameplay map is covered by Task 2.
 - Cards, skills, and random events being mandatory core systems are covered by Task 3.
-- Match feel, pacing, and AI improvements are covered by Task 4.
-- Richer battle HUD and feedback are covered by Task 5.
+- World-map Battle-scene reconstruction is covered by Task 4.
+- Match feel, pacing, and AI improvements are covered by Task 5.
 - Product shell work is covered by Task 6.
 
 ### Placeholder scan
