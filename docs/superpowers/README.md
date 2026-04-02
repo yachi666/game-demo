@@ -11,14 +11,16 @@ This folder contains validated delivery documents that turn approved product dir
 ## Plans
 
 - [Plans Index](./plans/README.md): implementation plans created after a spec is approved and reviewed.
+- [Fortune Board High-Fidelity Tiantian Fuweng Roadmap Implementation Plan](./plans/2026-04-01-fortune-board-high-fidelity-tianti-fuweng-roadmap.md): current roadmap for shifting delivery priority toward high-fidelity gameplay recreation, then feel, presentation, and product-shell phases.
 - [Fortune Board City Park Map Rework Implementation Plan](./plans/2026-03-28-fortune-board-city-park-map-rework.md): execution plan for the next Battle-scene presentation and pacing upgrade.
-- [Fortune Board Bright Amusement Map Polish Implementation Plan](./plans/2026-03-29-fortune-board-bright-amusement-map-polish.md): execution plan for the visual productization pass that adds Stitch-backed scenic art, structured HUD cards, and responsive layout behavior to the Battle scene.
+- [Fortune Board Bright Amusement Map Polish Implementation Plan](./plans/2026-03-29-fortune-board-bright-amusement-map-polish.md): original greenfield plan for the bright-amusement visual pass before the current repo landed in a half-migrated state.
+- [Fortune Board Battle Scene Visual Recovery Implementation Plan](./plans/2026-04-01-fortune-board-battle-scene-visual-recovery.md): recovery plan for finishing the bright-amusement Battle scene from the current repo state.
 
 ## Current Delivery Surface
 
 - The first playable Fortune Board MVP is implemented in this repository as a runnable Cocos Creator 3.8.8 project baseline with deterministic rules, simple AI, a battle scene, and Vitest-driven gameplay coverage.
 - The Cocos CI verification design is now implemented as a repo-local preflight verifier, an authoritative Cocos build wrapper, and a GitHub Actions workflow for macOS GUI build validation.
-- The next planned gameplay iteration is a cards-and-skills alpha slice that adds role differentiation and comeback tools without leaving the current single-scene Battle loop.
+- The current mainline planning direction is the 2026-04-01 high-fidelity roadmap, which treats the existing MVP as a foundation and prioritizes richer gameplay fidelity ahead of visual-only polish and product-shell work.
 
 ## Current CI Verification Contract
 

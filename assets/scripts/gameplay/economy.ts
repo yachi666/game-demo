@@ -23,6 +23,18 @@ export function applyCostDiscount(cost: number, discount: number): number {
   return Math.max(0, cost - discount);
 }
 
+export function getPropertyPurchaseQuote(match: MatchState, playerId: string, purchaseCost: number) {
+  const appliedDiscount =
+    match.statusEffects.find((effect) => effect.ownerId === playerId && effect.effectType === 'discountNextProperty')
+      ?.amount ?? 0;
+
+  return {
+    purchaseCost,
+    appliedDiscount,
+    effectivePurchaseCost: applyCostDiscount(purchaseCost, appliedDiscount),
+  };
+}
+
 export function applyTollBoost(toll: number, boost: number): number {
   return Math.max(0, toll + boost);
 }

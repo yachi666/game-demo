@@ -5,7 +5,17 @@ import { assertDefined } from '../utils/assert';
 import { addStatusEffect, clearStatusEffects } from './status-effects';
 
 function getRoleDefinition(roleId: string): RoleDefinition {
-  return assertDefined(ROLE_DEFINITIONS.find((role) => role.id === roleId), `Unknown role definition ${roleId}`);
+  return assertDefined(
+    ROLE_DEFINITIONS.find((role) => role.id === roleId),
+    `Unknown role definition ${roleId}`,
+  );
+}
+
+function refreshPendingSkillEffect(match: MatchState, ownerId: string, effectType: RoleDefinition['skillEffectType']) {
+  return clearStatusEffects(
+    match,
+    (effect) => effect.ownerId === ownerId && effect.effectType === effectType && effect.sourceType === 'skill',
+  );
 }
 
 export function validateSkillUseForPlayer(match: MatchState, playerIndex: number): RoleDefinition {
@@ -24,7 +34,8 @@ export function validateSkillUseForPlayer(match: MatchState, playerIndex: number
 
 export function applySkillForPlayer(match: MatchState, playerIndex: number): MatchState {
   const role = validateSkillUseForPlayer(match, playerIndex);
-  let nextMatch = structuredClone(match);
+  const player = assertDefined(match.players[playerIndex], `Missing player at index ${playerIndex}`);
+  let nextMatch = refreshPendingSkillEffect(match, player.id, role.skillEffectType);
   const nextPlayer = assertDefined(nextMatch.players[playerIndex], `Missing player at index ${playerIndex}`);
 
   nextPlayer.hasUsedSkillThisTurn = true;
@@ -35,17 +46,11 @@ export function applySkillForPlayer(match: MatchState, playerIndex: number): Mat
     amount: role.amount,
     sourceType: 'skill',
   });
-  nextMatch.logs = appendLog(nextMatch.logs, nextMatch.turn, nextMatch.phase, `${nextPlayer.label} used ${role.skillLabel}`);
-  return nextMatch;
-}
-
-export function clearSkillStateForPlayer(match: MatchState, playerIndex: number): MatchState {
-  const player = assertDefined(match.players[playerIndex], `Missing player at index ${playerIndex}`);
-  let nextMatch = clearStatusEffects(
-    match,
-    (effect) => effect.ownerId === player.id && effect.sourceType === 'skill',
+  nextMatch.logs = appendLog(
+    nextMatch.logs,
+    nextMatch.turn,
+    nextMatch.phase,
+    `${nextPlayer.label} used ${role.skillLabel}`,
   );
-  nextMatch = structuredClone(nextMatch);
-  assertDefined(nextMatch.players[playerIndex], `Missing player at index ${playerIndex}`).hasUsedSkillThisTurn = false;
   return nextMatch;
 }

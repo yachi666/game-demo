@@ -37,7 +37,7 @@ export function validateCardPlayForPlayer(match: MatchState, playerIndex: number
 }
 
 export function discardCardForPlayer(match: MatchState, playerIndex: number, cardId: string): MatchState {
-  let nextMatch = structuredClone(match);
+  const nextMatch = structuredClone(match);
   const nextPlayer = assertDefined(nextMatch.players[playerIndex], `Missing player at index ${playerIndex}`);
   const handIndex = nextPlayer.hand.indexOf(cardId);
   nextPlayer.hand.splice(handIndex, 1);
@@ -65,7 +65,12 @@ export function resolveCardForPlayer(match: MatchState, playerIndex: number, car
     });
   }
 
-  nextMatch.logs = appendLog(nextMatch.logs, nextMatch.turn, nextMatch.phase, `${nextPlayer.label} played ${card.label}`);
+  nextMatch.logs = appendLog(
+    nextMatch.logs,
+    nextMatch.turn,
+    nextMatch.phase,
+    `${nextPlayer.label} played ${card.label}`,
+  );
   return nextMatch;
 }
 

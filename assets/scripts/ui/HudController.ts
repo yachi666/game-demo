@@ -46,10 +46,13 @@ export class HudController extends Component {
       this.latestEventLabel.string = centerStage.latestEventLabel;
     }
     if (this.logLabel) {
-      this.logLabel.string = match.logs.slice(-6).map((entry) => entry.message).join('\n');
+      this.logLabel.string = match.logs
+        .slice(-6)
+        .map((entry) => entry.message)
+        .join('\n');
     }
 
-    match.players.forEach((player, index) => {
+    match.players.forEach((_player, index) => {
       const titleLabel = this.seatPanelTitleLabels[index];
       const statsLabel = this.seatPanelStatsLabels[index];
       const stateLabel = this.seatPanelStateLabels[index];
@@ -63,7 +66,7 @@ export class HudController extends Component {
       stateLabel.string = presentation.lines[2] ?? '';
 
       const panelNode = this.seatPanelNodes[index];
-      const opacity = panelNode?.getComponent(UIOpacity) ?? panelNode?.addComponent(UIOpacity) ?? null;
+      const opacity = panelNode?.getComponent(UIOpacity) ?? null;
       const tint = this.colorFromHex(presentation.tintHex);
       titleLabel.color = tint;
       statsLabel.color = tint;
@@ -76,12 +79,13 @@ export class HudController extends Component {
 
   private colorFromHex(hex: string): Color {
     const normalized = hex.replace('#', '');
-    const value = normalized.length === 3
-      ? normalized
-          .split('')
-          .map((channel) => `${channel}${channel}`)
-          .join('')
-      : normalized;
+    const value =
+      normalized.length === 3
+        ? normalized
+            .split('')
+            .map((channel) => `${channel}${channel}`)
+            .join('')
+        : normalized;
 
     return new Color(
       Number.parseInt(value.slice(0, 2), 16),

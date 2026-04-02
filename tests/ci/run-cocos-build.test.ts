@@ -9,7 +9,7 @@ const ROOT_DIR = path.resolve(__dirname, '../..');
 const WRAPPER_PATH = path.join(ROOT_DIR, 'tools/ci/run-cocos-build.sh');
 
 function createFakeCreatorApp(tempDir: string): string {
-const appRoot = path.join(tempDir, 'FakeCocosCreator.app');
+  const appRoot = path.join(tempDir, 'FakeCocosCreator.app');
   const binaryPath = path.join(appRoot, 'Contents/MacOS/CocosCreator');
   const script = `#!/bin/sh
 set -eu

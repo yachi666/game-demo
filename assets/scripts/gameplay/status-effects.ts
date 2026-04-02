@@ -24,10 +24,7 @@ export function consumeStatusEffect(
   return { match: nextMatch, effect: effect ?? null };
 }
 
-export function clearStatusEffects(
-  match: MatchState,
-  shouldClear: (effect: StatusEffectState) => boolean,
-): MatchState {
+export function clearStatusEffects(match: MatchState, shouldClear: (effect: StatusEffectState) => boolean): MatchState {
   const nextMatch = structuredClone(match);
   nextMatch.statusEffects = nextMatch.statusEffects.filter((effect) => !shouldClear(effect));
   return nextMatch;

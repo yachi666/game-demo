@@ -1,7 +1,7 @@
-import { GamePhase } from './phases';
+import type { GamePhase } from './phases';
 
 export type TileType = 'start' | 'property' | 'reward' | 'penalty' | 'chance' | 'festival';
-export type BoardDistrict = 'civic-plaza' | 'play-street' | 'harbor-leisure' | 'sky-garden';
+export type BoardDistrict = 'civic-plaza' | 'play-street' | 'harbor-leisure' | 'sky-garden' | 'neon-bazaar';
 export type CardEffectType =
   | 'gainCash'
   | 'moveSteps'
@@ -118,6 +118,14 @@ export interface MatchConfig {
   assetTarget: number;
   starterDeckCardIds: string[];
   availableRoleIds: string[];
+  minimumBoardTileCount: number;
+  minimumPropertyTileCount: number;
+}
+
+export interface MatchSetupSelection {
+  humanPlayers: number;
+  aiPlayers: number;
+  selectedRoleId?: string;
 }
 
 export type MatchAction =

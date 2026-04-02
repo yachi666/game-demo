@@ -1,11 +1,18 @@
 import { describe, expect, it } from 'vitest';
 
 import { createMatch } from '../../assets/scripts/core/create-match';
+import { GamePhase } from '../../assets/scripts/core/phases';
+import {
+  advanceToNextTurnFlow,
+  beginTurnFlow,
+  completeRoleSelectionFlow,
+  openRoleSelectionFlow,
+} from '../../assets/scripts/core/turn-flow';
 import { BOARD_CONFIG } from '../../assets/scripts/data/board-config';
 import { MATCH_CONFIG } from '../../assets/scripts/data/match-config';
 import { applyRollMovementForPlayer } from '../../assets/scripts/gameplay/movement';
 import { resolveTileForPlayer } from '../../assets/scripts/gameplay/resolve-tile';
-import { applySkillForPlayer, clearSkillStateForPlayer } from '../../assets/scripts/gameplay/skills';
+import { applySkillForPlayer } from '../../assets/scripts/gameplay/skills';
 
 const firstPropertyId = 'civic-1';
 const penaltyTileIndex = BOARD_CONFIG.findIndex((tile) => tile.id === 'penalty-1');
@@ -32,18 +39,28 @@ describe('skills', () => {
     expect(result.match.statusEffects).toEqual([]);
   });
 
-  it('applies the Collector skill as a one-time toll boost', () => {
-    const match = createMatch(BOARD_CONFIG, MATCH_CONFIG);
-    match.players[1].roleId = 'role-toll';
-    match.players[0].position = 1;
-    match.properties.find((property) => property.tileId === firstPropertyId)!.ownerId = 'player-2';
+  it('carries the Collector skill into the next opponent toll through turn flow', () => {
+    const match = beginTurnFlow(
+      completeRoleSelectionFlow(openRoleSelectionFlow(createMatch(BOARD_CONFIG, MATCH_CONFIG)), 'role-toll'),
+    );
+    match.properties.find((property) => property.tileId === firstPropertyId)!.ownerId = 'player-1';
 
-    const skilledMatch = applySkillForPlayer(match, 1);
-    const result = resolveTileForPlayer(skilledMatch, 0);
+    const skilledMatch = applySkillForPlayer(match, 0);
+    const nextTurnMatch = advanceToNextTurnFlow({ ...skilledMatch, phase: GamePhase.TurnEnd });
+    nextTurnMatch.players[1].position = 1;
+    const result = resolveTileForPlayer(nextTurnMatch, 1);
 
-    expect(skilledMatch.players[1].hasUsedSkillThisTurn).toBe(true);
-    expect(result.match.players[0].cash).toBe(335);
-    expect(result.match.players[1].cash).toBe(465);
+    expect(nextTurnMatch.players[0].hasUsedSkillThisTurn).toBe(false);
+    expect(nextTurnMatch.statusEffects).toEqual([
+      expect.objectContaining({
+        ownerId: 'player-1',
+        effectType: 'boostNextToll',
+        amount: 20,
+        sourceType: 'skill',
+      }),
+    ]);
+    expect(result.match.players[1].cash).toBe(335);
+    expect(result.match.players[0].cash).toBe(465);
     expect(result.match.statusEffects).toEqual([]);
   });
 
@@ -75,15 +92,47 @@ describe('skills', () => {
     expect(result.match.statusEffects).toEqual([]);
   });
 
-  it('clears skill flags and any unused skill effects at end of turn', () => {
-    const match = createMatch(BOARD_CONFIG, MATCH_CONFIG);
-    match.players[0].roleId = 'role-economy';
+  it('keeps unused skill effects across turn end while resetting the per-turn usage flag', () => {
+    const match = beginTurnFlow(
+      completeRoleSelectionFlow(openRoleSelectionFlow(createMatch(BOARD_CONFIG, MATCH_CONFIG)), 'role-economy'),
+    );
 
     const skilledMatch = applySkillForPlayer(match, 0);
-    const clearedMatch = clearSkillStateForPlayer(skilledMatch, 0);
+    const nextTurnMatch = advanceToNextTurnFlow({ ...skilledMatch, phase: GamePhase.TurnEnd });
 
-    expect(clearedMatch.players[0].hasUsedSkillThisTurn).toBe(false);
-    expect(clearedMatch.statusEffects).toEqual([]);
+    expect(nextTurnMatch.players[0].hasUsedSkillThisTurn).toBe(false);
+    expect(nextTurnMatch.statusEffects).toEqual([
+      expect.objectContaining({
+        ownerId: 'player-1',
+        effectType: 'discountNextProperty',
+        amount: 30,
+        sourceType: 'skill',
+      }),
+    ]);
+  });
+
+  it('refreshes a repeated unused skill effect instead of stacking duplicates across turns', () => {
+    const match = beginTurnFlow(
+      completeRoleSelectionFlow(openRoleSelectionFlow(createMatch(BOARD_CONFIG, MATCH_CONFIG)), 'role-economy'),
+    );
+
+    const firstUseMatch = applySkillForPlayer(match, 0);
+    let nextSkillTurnMatch = firstUseMatch;
+    for (let index = 0; index < MATCH_CONFIG.players.length; index += 1) {
+      nextSkillTurnMatch = advanceToNextTurnFlow({ ...nextSkillTurnMatch, phase: GamePhase.TurnEnd });
+    }
+
+    const secondUseMatch = applySkillForPlayer(nextSkillTurnMatch, 0);
+
+    expect(secondUseMatch.players[0].hasUsedSkillThisTurn).toBe(true);
+    expect(secondUseMatch.statusEffects).toEqual([
+      expect.objectContaining({
+        ownerId: 'player-1',
+        effectType: 'discountNextProperty',
+        amount: 30,
+        sourceType: 'skill',
+      }),
+    ]);
   });
 
   it('refuses to use a second skill in the same turn', () => {

@@ -5,6 +5,10 @@
   "platform": "web-desktop",
   "scenes": [
     {
+      "url": "db://assets/scenes/Lobby.scene",
+      "uuid": "8f9373fa-06d5-41db-be49-dc9e9903478f"
+    },
+    {
       "url": "db://assets/scenes/Battle.scene",
       "uuid": "6d8fa4db-c84c-4c65-9490-29da8a5d74cd"
     }
@@ -13,7 +17,7 @@
   "sourceMaps": false,
   "experimentalEraseModules": false,
   "bundleCommonChunk": true,
-  "startScene": "6d8fa4db-c84c-4c65-9490-29da8a5d74cd",
+  "startScene": "8f9373fa-06d5-41db-be49-dc9e9903478f",
   "buildPath": "build/cocos/web-desktop",
   "debug": true,
   "mangleProperties": false,

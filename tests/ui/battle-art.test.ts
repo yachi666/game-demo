@@ -65,16 +65,16 @@ function getChildNames(sceneRecords: SceneNodeRecord[], name: string): string[] 
 
 function getComponentTypes(sceneRecords: SceneNodeRecord[], name: string): string[] {
   const record = getNodeRecord(sceneRecords, name);
-  return (record._components ?? []).map((componentReference) => sceneRecords[componentReference.__id__]?.__type__ ?? '');
+  return (record._components ?? []).map(
+    (componentReference) => sceneRecords[componentReference.__id__]?.__type__ ?? '',
+  );
 }
 
 function getSerializedComponentTypesForNode(sceneRecords: SceneNodeRecord[], name: string): string[] {
   const nodeIndex = sceneRecords.findIndex((candidate) => candidate._name === name);
   expect(nodeIndex, `Missing node ${name} in Battle.scene`).toBeGreaterThanOrEqual(0);
 
-  return sceneRecords
-    .filter((record) => record.node?.__id__ === nodeIndex)
-    .map((record) => record.__type__ ?? '');
+  return sceneRecords.filter((record) => record.node?.__id__ === nodeIndex).map((record) => record.__type__ ?? '');
 }
 
 function getCanvasChildNames(): string[] {
@@ -174,9 +174,13 @@ describe('battle art contract', () => {
     const sceneRecords = readSceneRecords();
 
     expect(getComponentTypes(sceneRecords, 'HudLayer')).toContain(getCompressedScriptType(HUD_CONTROLLER_META_PATH));
-    expect(getComponentTypes(sceneRecords, 'PropertyPrompt')).toContain(getCompressedScriptType(PROPERTY_PROMPT_META_PATH));
+    expect(getComponentTypes(sceneRecords, 'PropertyPrompt')).toContain(
+      getCompressedScriptType(PROPERTY_PROMPT_META_PATH),
+    );
     expect(getComponentTypes(sceneRecords, 'ResultPanel')).toContain(getCompressedScriptType(RESULT_PANEL_META_PATH));
-    expect(getComponentTypes(sceneRecords, 'RoleSelection')).toContain(getCompressedScriptType(ROLE_SELECTION_META_PATH));
+    expect(getComponentTypes(sceneRecords, 'RoleSelection')).toContain(
+      getCompressedScriptType(ROLE_SELECTION_META_PATH),
+    );
     expect(getComponentTypes(sceneRecords, 'CardHand')).toContain(getCompressedScriptType(CARD_HAND_META_PATH));
     expect(getComponentTypes(sceneRecords, 'SkillButton')).toContain(getCompressedScriptType(SKILL_BUTTON_META_PATH));
   });

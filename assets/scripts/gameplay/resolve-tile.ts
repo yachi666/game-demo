@@ -1,14 +1,14 @@
 import { appendLog } from '../core/logger';
 import type { EventDefinition, MatchState, StatusEffectState } from '../core/types';
 import { assertDefined } from '../utils/assert';
-import { applyCostDiscount, applyTollBoost, getTileAt } from './economy';
+import { applyTollBoost, getPropertyPurchaseQuote, getTileAt } from './economy';
 import { getEventForLanding } from './events';
 import { applyForcedMovement } from './movement';
 import { addStatusEffect, consumeStatusEffect } from './status-effects';
 
 type PropertyDecision = { type: 'buy' } | { type: 'skip' };
 
-function assertNever(value: never, message: string): never {
+function assertNever(_value: never, message: string): never {
   throw new Error(message);
 }
 
@@ -108,21 +108,12 @@ function resolveTileForPlayerInternal(
         return { match: movementResult.match, requiresPropertyDecision: false };
       }
 
-      return resolveTileForPlayerInternal(
-        movementResult.match,
-        playerIndex,
-        { type: 'skip' },
-        false,
-      );
+      return resolveTileForPlayerInternal(movementResult.match, playerIndex, { type: 'skip' }, false);
     }
 
     const nextMatch = addStatusEffect(
       match,
-      createEventStatusEffect(
-        player.id,
-        event,
-        getStatusEffectTypeForEvent(event),
-      ),
+      createEventStatusEffect(player.id, event, getStatusEffectTypeForEvent(event)),
     );
 
     nextMatch.logs = appendLog(
@@ -195,21 +186,25 @@ function resolveTileForPlayerInternal(
       return { match, requiresPropertyDecision: true };
     }
 
-    const discountResult = consumeStatusEffect(match, player.id, 'discountNextProperty');
+    const purchaseQuote = getPropertyPurchaseQuote(
+      match,
+      player.id,
+      requireTileCost(tile.purchaseCost, 'purchaseCost', tile.id),
+    );
+    const discountResult =
+      purchaseQuote.appliedDiscount > 0
+        ? consumeStatusEffect(match, player.id, 'discountNextProperty')
+        : { match, effect: null };
     const nextMatch = structuredClone(discountResult.match);
     const nextPlayer = assertDefined(nextMatch.players[playerIndex], `Missing player at index ${playerIndex}`);
-    const purchaseCost = applyCostDiscount(
-      requireTileCost(tile.purchaseCost, 'purchaseCost', tile.id),
-      discountResult.effect?.amount ?? 0,
-    );
-    nextPlayer.cash -= purchaseCost;
+    nextPlayer.cash -= purchaseQuote.effectivePurchaseCost;
     if (nextPlayer.cash < 0) {
       bankruptPlayer(nextMatch, playerIndex);
       nextMatch.logs = appendLog(
         nextMatch.logs,
         nextMatch.turn,
         nextMatch.phase,
-        `${nextPlayer.label} could not afford ${tile.label} (${purchaseCost})`,
+        `${nextPlayer.label} could not afford ${tile.label} (${purchaseQuote.effectivePurchaseCost})`,
       );
       return { match: nextMatch, requiresPropertyDecision: false };
     }
@@ -218,7 +213,12 @@ function resolveTileForPlayerInternal(
       nextMatch.properties.find((entry) => entry.tileId === tile.id),
       `Missing property state for tile ${tile.id}`,
     ).ownerId = nextPlayer.id;
-    nextMatch.logs = appendLog(nextMatch.logs, nextMatch.turn, nextMatch.phase, `${nextPlayer.label} bought ${tile.label}`);
+    nextMatch.logs = appendLog(
+      nextMatch.logs,
+      nextMatch.turn,
+      nextMatch.phase,
+      `${nextPlayer.label} bought ${tile.label}`,
+    );
     return { match: nextMatch, requiresPropertyDecision: false };
   }
 
@@ -253,12 +253,7 @@ function resolveTileForPlayerInternal(
       bankruptPlayer(nextMatch, playerIndex);
     }
 
-    nextMatch.logs = appendLog(
-      nextMatch.logs,
-      nextMatch.turn,
-      nextMatch.phase,
-      `${player.label} paid toll ${toll}`,
-    );
+    nextMatch.logs = appendLog(nextMatch.logs, nextMatch.turn, nextMatch.phase, `${player.label} paid toll ${toll}`);
     return { match: nextMatch, requiresPropertyDecision: false };
   }
 

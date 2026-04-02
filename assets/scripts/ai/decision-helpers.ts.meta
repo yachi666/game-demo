@@ -1,0 +1,13 @@
+{
+  "ver": "4.0.24",
+  "importer": "typescript",
+  "imported": true,
+  "uuid": "bf4f58bc-12dd-45e2-b1cf-40b325d236da",
+  "files": [],
+  "subMetas": {},
+  "userData": {
+    "moduleId": "project:///assets/scripts/ai/decision-helpers.js",
+    "importerSettings": 7,
+    "simulateGlobals": []
+  }
+}

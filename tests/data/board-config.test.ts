@@ -17,12 +17,16 @@ const EXPECTED_TILE_VALUES = {
   'sky-2': { purchaseCost: 235, tollCost: 105 },
   'reward-3': { rewardAmount: 120 },
   'sky-3': { purchaseCost: 250, tollCost: 115 },
+  'neon-1': { purchaseCost: 270, tollCost: 125 },
+  'reward-4': { rewardAmount: 140 },
+  'neon-2': { purchaseCost: 290, tollCost: 135 },
+  'penalty-3': { penaltyAmount: 100 },
+  'neon-3': { purchaseCost: 320, tollCost: 150 },
 } as const;
 
 describe('BOARD_CONFIG', () => {
-  it('contains a medium-size city park loop', () => {
-    expect(BOARD_CONFIG.length).toBeGreaterThanOrEqual(16);
-    expect(BOARD_CONFIG.length).toBeLessThanOrEqual(20);
+  it('contains a full 24-tile city loop for the richer match contract', () => {
+    expect(BOARD_CONFIG).toHaveLength(24);
   });
 
   it('contains start, property, reward, penalty, chance, and festival tiles', () => {
@@ -43,15 +47,13 @@ describe('BOARD_CONFIG', () => {
       return totals;
     }, {});
 
-    expect(districts).toEqual(new Set(['civic-plaza', 'play-street', 'harbor-leisure', 'sky-garden']));
+    expect(districts).toEqual(new Set(['civic-plaza', 'play-street', 'harbor-leisure', 'sky-garden', 'neon-bazaar']));
     expect(BOARD_CONFIG.every((tile) => tile.type === 'start' || Boolean(tile.accentColor))).toBe(true);
-    expect(counts.property).toBeGreaterThanOrEqual(8);
-    expect(counts.property).toBeLessThanOrEqual(10);
-    expect(counts.reward).toBeGreaterThanOrEqual(2);
-    expect(counts.reward).toBeLessThanOrEqual(3);
-    expect(counts.penalty).toBe(2);
-    expect((counts.chance ?? 0) + (counts.festival ?? 0)).toBeGreaterThanOrEqual(2);
-    expect((counts.chance ?? 0) + (counts.festival ?? 0)).toBeLessThanOrEqual(3);
+    expect(counts.property).toBe(12);
+    expect(counts.reward).toBe(4);
+    expect(counts.penalty).toBe(3);
+    expect(counts.chance).toBe(3);
+    expect(counts.festival).toBe(1);
   });
 
   it('keeps the authored city-park loop stable enough to catch accidental reordering', () => {
@@ -74,6 +76,12 @@ describe('BOARD_CONFIG', () => {
       'sky-2',
       'reward-3',
       'sky-3',
+      'chance-3',
+      'neon-1',
+      'reward-4',
+      'neon-2',
+      'penalty-3',
+      'neon-3',
     ]);
   });
 
@@ -96,17 +104,17 @@ describe('BOARD_CONFIG', () => {
 
   it('locks the authored economics payloads exactly', () => {
     const actual = Object.fromEntries(
-      BOARD_CONFIG.filter(
-        (tile) => tile.type === 'property' || tile.type === 'reward' || tile.type === 'penalty',
-      ).map((tile) => [
-        tile.id,
-        {
-          ...(tile.purchaseCost !== undefined ? { purchaseCost: tile.purchaseCost } : {}),
-          ...(tile.tollCost !== undefined ? { tollCost: tile.tollCost } : {}),
-          ...(tile.rewardAmount !== undefined ? { rewardAmount: tile.rewardAmount } : {}),
-          ...(tile.penaltyAmount !== undefined ? { penaltyAmount: tile.penaltyAmount } : {}),
-        },
-      ]),
+      BOARD_CONFIG.filter((tile) => tile.type === 'property' || tile.type === 'reward' || tile.type === 'penalty').map(
+        (tile) => [
+          tile.id,
+          {
+            ...(tile.purchaseCost !== undefined ? { purchaseCost: tile.purchaseCost } : {}),
+            ...(tile.tollCost !== undefined ? { tollCost: tile.tollCost } : {}),
+            ...(tile.rewardAmount !== undefined ? { rewardAmount: tile.rewardAmount } : {}),
+            ...(tile.penaltyAmount !== undefined ? { penaltyAmount: tile.penaltyAmount } : {}),
+          },
+        ],
+      ),
     );
 
     expect(actual).toEqual(EXPECTED_TILE_VALUES);

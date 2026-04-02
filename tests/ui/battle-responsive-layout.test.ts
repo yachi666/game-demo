@@ -1,6 +1,222 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
-import { getBattleLayoutProfile } from '../../assets/scripts/ui/battle-responsive-layout';
+import { BOARD_CONFIG } from '../../assets/scripts/data/board-config';
+import { MATCH_CONFIG } from '../../assets/scripts/data/match-config';
+import { getBattleLayoutProfile, getBattleRuntimeLayout } from '../../assets/scripts/ui/battle-responsive-layout';
+
+type MockCcModule = ReturnType<typeof createCcMock>;
+type MockNode = InstanceType<MockCcModule['Node']>;
+
+function createCcMock() {
+  class Component {
+    public node!: InstanceType<typeof Node>;
+
+    public scheduleOnce(callback: () => void): void {
+      callback();
+    }
+  }
+
+  class Vec3 {
+    public constructor(
+      public x = 0,
+      public y = 0,
+      public z = 0,
+    ) {}
+
+    public add(other: Vec3): Vec3 {
+      this.x += other.x;
+      this.y += other.y;
+      this.z += other.z;
+      return this;
+    }
+
+    public clone(): Vec3 {
+      return new Vec3(this.x, this.y, this.z);
+    }
+  }
+
+  class Node {
+    public active = true;
+    public children: Node[] = [];
+    public layer = 0;
+    public name: string;
+    public parent: Node | null = null;
+    public position = { x: 0, y: 0, z: 0 };
+    public scale = { x: 1, y: 1, z: 1 };
+    private readonly components: Component[] = [];
+    private readonly listeners = new Map<string, Array<(...args: unknown[]) => void>>();
+
+    public constructor(name = '') {
+      this.name = name;
+    }
+
+    public addChild(child: Node): void {
+      child.parent = this;
+      this.children.push(child);
+    }
+
+    public addComponent<T extends Component>(ctor: new () => T): T {
+      const component = new ctor();
+      component.node = this;
+      this.components.push(component);
+      return component;
+    }
+
+    public destroyAllChildren(): void {
+      this.children = [];
+    }
+
+    public getChildByName(name: string): Node | null {
+      return this.children.find((child) => child.name === name) ?? null;
+    }
+
+    public getComponent<T extends Component>(ctor: new () => T): T | null {
+      return (this.components.find((component) => component instanceof ctor) as T | undefined) ?? null;
+    }
+
+    public off(eventType?: string): void {
+      if (!eventType) {
+        this.listeners.clear();
+        return;
+      }
+
+      this.listeners.delete(eventType);
+    }
+
+    public on(eventType: string, callback: (...args: unknown[]) => void): void {
+      const callbacks = this.listeners.get(eventType) ?? [];
+      callbacks.push(callback);
+      this.listeners.set(eventType, callbacks);
+    }
+
+    public setPosition(x: number, y: number, z = 0): void {
+      this.position = { x, y, z };
+    }
+
+    public setScale(x: number, y = x, z = 1): void {
+      this.scale = { x, y, z };
+    }
+
+    public setWorldPosition(position: Vec3): void {
+      this.position = { x: position.x, y: position.y, z: position.z };
+    }
+
+    public get worldPosition(): Vec3 {
+      return new Vec3(this.position.x, this.position.y, this.position.z);
+    }
+  }
+
+  class UITransform extends Component {
+    public contentSize = { height: 0, width: 0 };
+
+    public setContentSize(width: number, height: number): void {
+      this.contentSize = { width, height };
+    }
+  }
+
+  class Label extends Component {
+    public static Overflow = {
+      SHRINK: 'shrink',
+    } as const;
+
+    public color: Color | null = null;
+    public overflow: string | null = null;
+    public string = '';
+  }
+
+  class Button extends Component {
+    public static EventType = {
+      CLICK: 'click',
+    } as const;
+
+    public static Transition = {
+      NONE: 'none',
+    } as const;
+
+    public interactable = true;
+    public transition = Button.Transition.NONE;
+  }
+
+  class Color {
+    public constructor(
+      public r: number,
+      public g: number,
+      public b: number,
+      public a: number,
+    ) {}
+  }
+
+  class UIOpacity extends Component {
+    public opacity = 255;
+  }
+
+  function tween<T>(target: T) {
+    let onDone: (() => void) | undefined;
+
+    return {
+      call(callback: () => void) {
+        onDone = callback;
+        return this;
+      },
+      start() {
+        onDone?.();
+        return target;
+      },
+      to() {
+        return this;
+      },
+    };
+  }
+
+  const _decorator = {
+    ccclass:
+      () =>
+      <T>(target: T) =>
+        target,
+    property: () => () => undefined,
+  };
+
+  return {
+    _decorator,
+    Button,
+    Color,
+    Component,
+    Label,
+    Node,
+    tween,
+    UIOpacity,
+    UITransform,
+    Vec3,
+  };
+}
+
+function createLabelNode(NodeCtor: MockCcModule['Node'], LabelCtor: MockCcModule['Label'], name: string): MockNode {
+  const node = new NodeCtor(name);
+  node.addComponent(LabelCtor);
+  return node;
+}
+
+function createButtonNode(NodeCtor: MockCcModule['Node'], ButtonCtor: MockCcModule['Button'], name: string): MockNode {
+  const node = new NodeCtor(name);
+  node.addComponent(ButtonCtor);
+  return node;
+}
+
+function createSeatPanel(NodeCtor: MockCcModule['Node'], LabelCtor: MockCcModule['Label'], index: number): MockNode {
+  const node = new NodeCtor(`SeatPanel${index}`);
+  node.addChild(createLabelNode(NodeCtor, LabelCtor, 'TitleLabel'));
+  node.addChild(createLabelNode(NodeCtor, LabelCtor, 'StatsLabel'));
+  node.addChild(createLabelNode(NodeCtor, LabelCtor, 'StateLabel'));
+  return node;
+}
+
+function createTileNode(NodeCtor: MockCcModule['Node'], LabelCtor: MockCcModule['Label'], index: number): MockNode {
+  const node = new NodeCtor(`Tile${index}`);
+  node.addChild(createLabelNode(NodeCtor, LabelCtor, 'TitleLabel'));
+  node.addChild(createLabelNode(NodeCtor, LabelCtor, 'SupportingLabel'));
+  node.addChild(createLabelNode(NodeCtor, LabelCtor, 'BadgeLabel'));
+  return node;
+}
 
 describe('getBattleLayoutProfile', () => {
   it('throws a clear error for invalid viewport dimensions', () => {
@@ -90,5 +306,240 @@ describe('getBattleLayoutProfile', () => {
     expect(layout.profile).toBe('portrait');
     expect(layout.boardScale).toBe(0.76);
     expect(layout.centerStage).toEqual({ x: 0, y: 52, width: 250, height: 108 });
+  });
+
+  it('maps profile geometry into deterministic runtime node layout order', () => {
+    const runtimeLayout = getBattleRuntimeLayout(getBattleLayoutProfile({ width: 999, height: 1000 }));
+
+    expect(runtimeLayout).toEqual({
+      boardScale: 0.76,
+      centerStage: { x: 0, y: 52, width: 250, height: 108 },
+      seatPanelPositions: [
+        { x: -176, y: 448 },
+        { x: 176, y: 448 },
+        { x: 176, y: -448 },
+        { x: -176, y: -448 },
+      ],
+    });
+  });
+
+  it('applies the computed layout to the bound battle scene nodes', async () => {
+    vi.resetModules();
+    vi.doMock('cc', () => createCcMock());
+
+    const cc = (await import('cc')) as MockCcModule;
+    const { Button, Label, Node, UITransform } = cc;
+    const { BattleController } = await import('../../assets/scripts/ui/BattleController');
+    const { CardHandController } = await import('../../assets/scripts/ui/CardHandController');
+    const { HudController } = await import('../../assets/scripts/ui/HudController');
+    const { PropertyPrompt } = await import('../../assets/scripts/ui/PropertyPrompt');
+    const { ResultPanel } = await import('../../assets/scripts/ui/ResultPanel');
+    const { RoleSelectionController } = await import('../../assets/scripts/ui/RoleSelectionController');
+    const { SkillButtonController } = await import('../../assets/scripts/ui/SkillButtonController');
+
+    const canvas = new Node('Canvas');
+    canvas.addComponent(UITransform).setContentSize(720, 1280);
+
+    const backgroundLayer = new Node('BackgroundLayer');
+    const boardDecorLayer = new Node('BoardDecorLayer');
+    const tileLayer = new Node('TileLayer');
+    const tokenLayer = new Node('TokenLayer');
+    const hudLayer = new Node('HudLayer');
+    hudLayer.addComponent(HudController);
+    const overlayLayer = new Node('OverlayLayer');
+
+    canvas.addChild(backgroundLayer);
+    canvas.addChild(boardDecorLayer);
+    canvas.addChild(tileLayer);
+    canvas.addChild(tokenLayer);
+    canvas.addChild(hudLayer);
+    canvas.addChild(overlayLayer);
+
+    const seatPanels = new Node('SeatPanels');
+    MATCH_CONFIG.players.forEach((_player, index) => {
+      seatPanels.addChild(createSeatPanel(Node, Label, index));
+    });
+
+    const centerStage = new Node('CenterStage');
+    centerStage.addComponent(UITransform);
+    centerStage.addChild(createLabelNode(Node, Label, 'ActivePlayerLabel'));
+    centerStage.addChild(createLabelNode(Node, Label, 'TurnLabel'));
+    centerStage.addChild(createLabelNode(Node, Label, 'LatestEventLabel'));
+    centerStage.addChild(createButtonNode(Node, Button, 'RollButton'));
+
+    const actionArea = new Node('ActionArea');
+    actionArea.addChild(createLabelNode(Node, Label, 'LogLabel'));
+
+    const cardHand = new Node('CardHand');
+    cardHand.addComponent(CardHandController);
+    cardHand.addChild(createLabelNode(Node, Label, 'TitleLabel'));
+    cardHand.addChild(new Node('Cards'));
+    actionArea.addChild(cardHand);
+
+    const skillButton = new Node('SkillButton');
+    skillButton.addComponent(Button);
+    skillButton.addComponent(SkillButtonController);
+    skillButton.addChild(createLabelNode(Node, Label, 'Label'));
+    actionArea.addChild(skillButton);
+
+    hudLayer.addChild(seatPanels);
+    hudLayer.addChild(centerStage);
+    hudLayer.addChild(actionArea);
+
+    const propertyPrompt = new Node('PropertyPrompt');
+    propertyPrompt.addComponent(PropertyPrompt);
+    propertyPrompt.addChild(createLabelNode(Node, Label, 'TitleLabel'));
+    propertyPrompt.addChild(createLabelNode(Node, Label, 'DistrictLabel'));
+    propertyPrompt.addChild(createLabelNode(Node, Label, 'CostLabel'));
+    propertyPrompt.addChild(createLabelNode(Node, Label, 'ProjectedCashLabel'));
+    propertyPrompt.addChild(createButtonNode(Node, Button, 'BuyButton'));
+    propertyPrompt.addChild(createButtonNode(Node, Button, 'SkipButton'));
+
+    const resultPanel = new Node('ResultPanel');
+    resultPanel.addComponent(ResultPanel);
+    resultPanel.addChild(createLabelNode(Node, Label, 'ResultLabel'));
+
+    const roleSelection = new Node('RoleSelection');
+    roleSelection.addComponent(RoleSelectionController);
+    roleSelection.addChild(createLabelNode(Node, Label, 'TitleLabel'));
+    roleSelection.addChild(new Node('Options'));
+
+    overlayLayer.addChild(propertyPrompt);
+    overlayLayer.addChild(resultPanel);
+    overlayLayer.addChild(roleSelection);
+
+    BOARD_CONFIG.forEach((_tile, index) => {
+      tileLayer.addChild(createTileNode(Node, Label, index));
+    });
+    MATCH_CONFIG.players.forEach((_player, index) => {
+      tokenLayer.addChild(new Node(`Token${index}`));
+    });
+
+    const controller = canvas.addComponent(BattleController);
+
+    (controller as BattleController & { bindScene: () => void }).bindScene();
+
+    expect(boardDecorLayer.scale).toEqual({ x: 0.76, y: 0.76, z: 1 });
+    expect(tileLayer.scale).toEqual({ x: 0.76, y: 0.76, z: 1 });
+    expect(tokenLayer.scale).toEqual({ x: 0.76, y: 0.76, z: 1 });
+    expect(centerStage.position).toEqual({ x: 0, y: 52, z: 0 });
+    expect(centerStage.getComponent(UITransform)?.contentSize).toEqual({ width: 250, height: 108 });
+    expect(seatPanels.getChildByName('SeatPanel0')?.position).toEqual({ x: -176, y: 448, z: 0 });
+    expect(seatPanels.getChildByName('SeatPanel1')?.position).toEqual({ x: 176, y: 448, z: 0 });
+    expect(seatPanels.getChildByName('SeatPanel2')?.position).toEqual({ x: 176, y: -448, z: 0 });
+    expect(seatPanels.getChildByName('SeatPanel3')?.position).toEqual({ x: -176, y: -448, z: 0 });
+  });
+
+  it('hides unused seat panels and tokens for reduced player-count battle setups', async () => {
+    vi.resetModules();
+    vi.doMock('cc', () => createCcMock());
+
+    const cc = (await import('cc')) as MockCcModule;
+    const { Button, Label, Node, UITransform } = cc;
+    const { setCurrentMatchSetupSelection } = await import('../../assets/scripts/ui/LobbyController');
+    const { BattleController } = await import('../../assets/scripts/ui/BattleController');
+    const { CardHandController } = await import('../../assets/scripts/ui/CardHandController');
+    const { HudController } = await import('../../assets/scripts/ui/HudController');
+    const { PropertyPrompt } = await import('../../assets/scripts/ui/PropertyPrompt');
+    const { ResultPanel } = await import('../../assets/scripts/ui/ResultPanel');
+    const { RoleSelectionController } = await import('../../assets/scripts/ui/RoleSelectionController');
+    const { SkillButtonController } = await import('../../assets/scripts/ui/SkillButtonController');
+
+    setCurrentMatchSetupSelection({
+      humanPlayers: 2,
+      aiPlayers: 1,
+      selectedRoleId: 'role-toll',
+    });
+
+    const canvas = new Node('Canvas');
+    canvas.addComponent(UITransform).setContentSize(720, 1280);
+
+    const backgroundLayer = new Node('BackgroundLayer');
+    const boardDecorLayer = new Node('BoardDecorLayer');
+    const tileLayer = new Node('TileLayer');
+    const tokenLayer = new Node('TokenLayer');
+    const hudLayer = new Node('HudLayer');
+    hudLayer.addComponent(HudController);
+    const overlayLayer = new Node('OverlayLayer');
+
+    canvas.addChild(backgroundLayer);
+    canvas.addChild(boardDecorLayer);
+    canvas.addChild(tileLayer);
+    canvas.addChild(tokenLayer);
+    canvas.addChild(hudLayer);
+    canvas.addChild(overlayLayer);
+
+    const seatPanels = new Node('SeatPanels');
+    MATCH_CONFIG.players.forEach((_player, index) => {
+      seatPanels.addChild(createSeatPanel(Node, Label, index));
+    });
+
+    const centerStage = new Node('CenterStage');
+    centerStage.addComponent(UITransform);
+    centerStage.addChild(createLabelNode(Node, Label, 'ActivePlayerLabel'));
+    centerStage.addChild(createLabelNode(Node, Label, 'TurnLabel'));
+    centerStage.addChild(createLabelNode(Node, Label, 'LatestEventLabel'));
+    centerStage.addChild(createButtonNode(Node, Button, 'RollButton'));
+
+    const actionArea = new Node('ActionArea');
+    actionArea.addChild(createLabelNode(Node, Label, 'LogLabel'));
+
+    const cardHand = new Node('CardHand');
+    cardHand.addComponent(CardHandController);
+    cardHand.addChild(createLabelNode(Node, Label, 'TitleLabel'));
+    cardHand.addChild(new Node('Cards'));
+    actionArea.addChild(cardHand);
+
+    const skillButton = new Node('SkillButton');
+    skillButton.addComponent(Button);
+    skillButton.addComponent(SkillButtonController);
+    skillButton.addChild(createLabelNode(Node, Label, 'Label'));
+    actionArea.addChild(skillButton);
+
+    hudLayer.addChild(seatPanels);
+    hudLayer.addChild(centerStage);
+    hudLayer.addChild(actionArea);
+
+    const propertyPrompt = new Node('PropertyPrompt');
+    propertyPrompt.addComponent(PropertyPrompt);
+    propertyPrompt.addChild(createLabelNode(Node, Label, 'TitleLabel'));
+    propertyPrompt.addChild(createLabelNode(Node, Label, 'DistrictLabel'));
+    propertyPrompt.addChild(createLabelNode(Node, Label, 'CostLabel'));
+    propertyPrompt.addChild(createLabelNode(Node, Label, 'ProjectedCashLabel'));
+    propertyPrompt.addChild(createButtonNode(Node, Button, 'BuyButton'));
+    propertyPrompt.addChild(createButtonNode(Node, Button, 'SkipButton'));
+
+    const resultPanel = new Node('ResultPanel');
+    resultPanel.addComponent(ResultPanel);
+    resultPanel.addChild(createLabelNode(Node, Label, 'ResultLabel'));
+
+    const roleSelection = new Node('RoleSelection');
+    roleSelection.addComponent(RoleSelectionController);
+    roleSelection.addChild(createLabelNode(Node, Label, 'TitleLabel'));
+    roleSelection.addChild(new Node('Options'));
+
+    overlayLayer.addChild(propertyPrompt);
+    overlayLayer.addChild(resultPanel);
+    overlayLayer.addChild(roleSelection);
+
+    BOARD_CONFIG.forEach((_tile, index) => {
+      tileLayer.addChild(createTileNode(Node, Label, index));
+    });
+    MATCH_CONFIG.players.forEach((_player, index) => {
+      tokenLayer.addChild(new Node(`Token${index}`));
+    });
+
+    const controller = canvas.addComponent(BattleController);
+
+    (controller as BattleController & { bindScene: () => void }).bindScene();
+
+    expect(seatPanels.getChildByName('SeatPanel0')?.active).toBe(true);
+    expect(seatPanels.getChildByName('SeatPanel1')?.active).toBe(true);
+    expect(seatPanels.getChildByName('SeatPanel2')?.active).toBe(true);
+    expect(seatPanels.getChildByName('SeatPanel3')?.active).toBe(false);
+    expect(tokenLayer.getChildByName('Token0')?.active).toBe(true);
+    expect(tokenLayer.getChildByName('Token1')?.active).toBe(true);
+    expect(tokenLayer.getChildByName('Token2')?.active).toBe(true);
+    expect(tokenLayer.getChildByName('Token3')?.active).toBe(false);
   });
 });

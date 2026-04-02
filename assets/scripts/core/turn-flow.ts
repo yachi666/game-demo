@@ -2,7 +2,6 @@ import { advancePhase } from './advance-phase';
 import { GamePhase } from './phases';
 import type { MatchState } from './types';
 import { drawCardsForPlayer } from '../gameplay/cards';
-import { clearStatusEffects } from '../gameplay/status-effects';
 import { assertDefined } from '../utils/assert';
 
 // This module owns deterministic multi-step sequencing so scene controllers stay thin adapters.
@@ -36,14 +35,16 @@ function assignRolesForMatch(match: MatchState, humanRoleId: string): MatchState
   const remainingRoleIds = nextMatch.availableRoleIds.filter((roleId) => roleId !== humanRoleId);
   nextMatch.players[humanIndex]!.roleId = humanRoleId;
 
-  nextMatch.players.forEach((player) => {
-    if (!player.isHuman) {
-      const nextRoleId = remainingRoleIds.shift();
-      if (!nextRoleId) {
-        throw new Error('Not enough roles available to assign to AI players');
-      }
-      player.roleId = nextRoleId;
+  nextMatch.players.forEach((player, index) => {
+    if (index === humanIndex) {
+      return;
     }
+
+    const nextRoleId = remainingRoleIds.shift();
+    if (!nextRoleId) {
+      throw new Error('Not enough roles available to assign to players');
+    }
+    player.roleId = nextRoleId;
   });
 
   nextMatch.availableRoleIds = [];
@@ -105,14 +106,13 @@ export function advanceToNextTurnFlow(match: MatchState): MatchState {
     throw new Error(`Next turn flow can only advance from ${GamePhase.TurnEnd}`);
   }
 
-  const activePlayer = assertDefined(match.players[match.activePlayerIndex], `Missing player at index ${match.activePlayerIndex}`);
-  const cleanedMatch = structuredClone(
-    clearStatusEffects(match, (effect) => effect.ownerId === activePlayer.id),
-  );
+  const cleanedMatch = structuredClone(match);
   const cleanedPlayer = assertDefined(
     cleanedMatch.players[cleanedMatch.activePlayerIndex],
     `Missing player at index ${cleanedMatch.activePlayerIndex}`,
   );
+
+  // One-shot gameplay effects stay in the deterministic rules state until their next legal consumer uses them.
   cleanedPlayer.hasUsedCardThisTurn = false;
   cleanedPlayer.hasUsedSkillThisTurn = false;
 

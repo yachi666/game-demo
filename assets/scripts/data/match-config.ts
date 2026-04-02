@@ -16,5 +16,7 @@ export const MATCH_CONFIG: MatchConfigType & {
   assetTarget: 650,
   starterDeckCardIds: STARTER_CARD_DEFINITIONS.map((card) => card.id),
   availableRoleIds: ROLE_DEFINITIONS.map((role) => role.id),
+  minimumBoardTileCount: 24,
+  minimumPropertyTileCount: 12,
   aiReserveCash: 150,
 };

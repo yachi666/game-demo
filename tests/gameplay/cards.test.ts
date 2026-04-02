@@ -12,12 +12,7 @@ describe('cards', () => {
     const nextMatch = drawCardsForPlayer(match, 0, 2);
 
     expect(nextMatch.players[0].hand).toEqual(['card-cash-50', 'card-move-2']);
-    expect(nextMatch.drawPile).toEqual([
-      'card-move-back-1',
-      'card-shield',
-      'card-discount-40',
-      'card-toll-boost-25',
-    ]);
+    expect(nextMatch.drawPile).toEqual(['card-move-back-1', 'card-shield', 'card-discount-40', 'card-toll-boost-25']);
   });
 
   it('plays a gain-cash card, discards it, and marks the turn card-use flag', () => {

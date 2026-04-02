@@ -3,7 +3,11 @@ import { describe, expect, it } from 'vitest';
 import { createMatch } from '../../assets/scripts/core/create-match';
 import { BOARD_CONFIG } from '../../assets/scripts/data/board-config';
 import { MATCH_CONFIG } from '../../assets/scripts/data/match-config';
-import { applyForcedMovement, applyRollMovementForPlayer, movePlayerPosition } from '../../assets/scripts/gameplay/movement';
+import {
+  applyForcedMovement,
+  applyRollMovementForPlayer,
+  movePlayerPosition,
+} from '../../assets/scripts/gameplay/movement';
 
 describe('movePlayerPosition', () => {
   it('wraps around the board and reports passing start', () => {
@@ -59,6 +63,6 @@ describe('applyRollMovementForPlayer', () => {
     expect(result.match.players[0].position).toBe(3);
     expect(result.match.players[0].cash).toBe(500);
     expect(result.match.statusEffects).toEqual([]);
-    expect(result.movement.visitedPositions).toEqual([17, 0, 1, 2, 3]);
+    expect(result.movement.visitedPositions).toEqual([BOARD_CONFIG.length - 1, 0, 1, 2, 3]);
   });
 });
