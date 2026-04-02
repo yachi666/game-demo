@@ -178,6 +178,19 @@ function createCcMock(loadSceneCalls: string[]) {
       this.scale = { x, y, z };
     }
 
+    public setSiblingIndex(index: number): void {
+      if (!this.parent) {
+        return;
+      }
+
+      const currentIndex = this.parent.children.indexOf(this);
+      if (currentIndex < 0) {
+        return;
+      }
+
+      this.parent.children.splice(currentIndex, 1);
+      this.parent.children.splice(Math.max(0, Math.min(index, this.parent.children.length)), 0, this);
+    }
     public setWorldPosition(position: Vec3): void {
       this.position = { x: position.x, y: position.y, z: position.z };
     }
@@ -205,6 +218,37 @@ function createCcMock(loadSceneCalls: string[]) {
     public string = '';
   }
 
+  class Graphics extends Component {
+    public commands: string[] = [];
+
+    public clear(): void {
+      this.commands.push('clear');
+    }
+
+    public moveTo(x: number, y: number): void {
+      this.commands.push(`moveTo:${x}:${y}`);
+    }
+
+    public lineTo(x: number, y: number): void {
+      this.commands.push(`lineTo:${x}:${y}`);
+    }
+
+    public roundRect(x: number, y: number, width: number, height: number, radius: number): void {
+      this.commands.push(`roundRect:${x}:${y}:${width}:${height}:${radius}`);
+    }
+
+    public circle(x: number, y: number, radius: number): void {
+      this.commands.push(`circle:${x}:${y}:${radius}`);
+    }
+
+    public fill(): void {
+      this.commands.push('fill');
+    }
+
+    public stroke(): void {
+      this.commands.push('stroke');
+    }
+  }
   class Button extends Component {
     public static EventType = {
       CLICK: 'click',
@@ -263,13 +307,19 @@ function createCcMock(loadSceneCalls: string[]) {
     },
   };
 
+  const profiler = {
+    hideStats: () => undefined,
+  };
+
   return {
     _decorator,
     Button,
     Color,
     Component,
+    Graphics,
     Label,
     Node,
+    profiler,
     tween,
     UIOpacity,
     UITransform,
@@ -586,6 +636,12 @@ describe('product shell lobby flow', () => {
 
     expect(loadSceneCalls).toEqual(['Battle']);
     expect(lobbyModule.getCurrentMatchSetupSelection()).toEqual({
+      humanPlayers: 1,
+      aiPlayers: 3,
+      selectedRoleId: 'role-economy',
+    });
+
+    lobbyModule.setCurrentMatchSetupSelection({
       humanPlayers: 1,
       aiPlayers: 3,
     });

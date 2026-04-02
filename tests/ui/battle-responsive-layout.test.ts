@@ -124,6 +124,37 @@ function createCcMock() {
     public string = '';
   }
 
+  class Graphics extends Component {
+    public commands: string[] = [];
+
+    public clear(): void {
+      this.commands.push('clear');
+    }
+
+    public moveTo(x: number, y: number): void {
+      this.commands.push(`moveTo:${x}:${y}`);
+    }
+
+    public lineTo(x: number, y: number): void {
+      this.commands.push(`lineTo:${x}:${y}`);
+    }
+
+    public roundRect(x: number, y: number, width: number, height: number, radius: number): void {
+      this.commands.push(`roundRect:${x}:${y}:${width}:${height}:${radius}`);
+    }
+
+    public circle(x: number, y: number, radius: number): void {
+      this.commands.push(`circle:${x}:${y}:${radius}`);
+    }
+
+    public fill(): void {
+      this.commands.push('fill');
+    }
+
+    public stroke(): void {
+      this.commands.push('stroke');
+    }
+  }
   class Button extends Component {
     public static EventType = {
       CLICK: 'click',
@@ -176,13 +207,18 @@ function createCcMock() {
     property: () => () => undefined,
   };
 
+  const profiler = {
+    hideStats: () => undefined,
+  };
   return {
     _decorator,
     Button,
     Color,
     Component,
+    Graphics,
     Label,
     Node,
+    profiler,
     tween,
     UIOpacity,
     UITransform,
@@ -430,6 +466,115 @@ describe('getBattleLayoutProfile', () => {
     expect(seatPanels.getChildByName('SeatPanel3')?.position).toEqual({ x: -176, y: -448, z: 0 });
   });
 
+  it('builds world-map scenic layers and card frames instead of leaving bare text nodes', async () => {
+    vi.resetModules();
+    vi.doMock('cc', () => createCcMock());
+
+    const cc = (await import('cc')) as MockCcModule;
+    const { Button, Label, Node, UITransform } = cc;
+    const { BattleController } = await import('../../assets/scripts/ui/BattleController');
+    const { CardHandController } = await import('../../assets/scripts/ui/CardHandController');
+    const { HudController } = await import('../../assets/scripts/ui/HudController');
+    const { PropertyPrompt } = await import('../../assets/scripts/ui/PropertyPrompt');
+    const { ResultPanel } = await import('../../assets/scripts/ui/ResultPanel');
+    const { RoleSelectionController } = await import('../../assets/scripts/ui/RoleSelectionController');
+    const { SkillButtonController } = await import('../../assets/scripts/ui/SkillButtonController');
+
+    const canvas = new Node('Canvas');
+    canvas.addComponent(UITransform).setContentSize(1280, 720);
+
+    const backgroundLayer = new Node('BackgroundLayer');
+    const boardDecorLayer = new Node('BoardDecorLayer');
+    const tileLayer = new Node('TileLayer');
+    const tokenLayer = new Node('TokenLayer');
+    const hudLayer = new Node('HudLayer');
+    hudLayer.addComponent(HudController);
+    const overlayLayer = new Node('OverlayLayer');
+
+    canvas.addChild(backgroundLayer);
+    canvas.addChild(boardDecorLayer);
+    canvas.addChild(tileLayer);
+    canvas.addChild(tokenLayer);
+    canvas.addChild(hudLayer);
+    canvas.addChild(overlayLayer);
+
+    const seatPanels = new Node('SeatPanels');
+    MATCH_CONFIG.players.forEach((_player, index) => {
+      seatPanels.addChild(createSeatPanel(Node, Label, index));
+    });
+
+    const centerStage = new Node('CenterStage');
+    centerStage.addComponent(UITransform);
+    centerStage.addChild(createLabelNode(Node, Label, 'ActivePlayerLabel'));
+    centerStage.addChild(createLabelNode(Node, Label, 'TurnLabel'));
+    centerStage.addChild(createLabelNode(Node, Label, 'LatestEventLabel'));
+    centerStage.addChild(createButtonNode(Node, Button, 'RollButton'));
+
+    const actionArea = new Node('ActionArea');
+    actionArea.addChild(createLabelNode(Node, Label, 'LogLabel'));
+
+    const cardHand = new Node('CardHand');
+    cardHand.addComponent(CardHandController);
+    cardHand.addChild(createLabelNode(Node, Label, 'TitleLabel'));
+    cardHand.addChild(new Node('Cards'));
+    actionArea.addChild(cardHand);
+
+    const skillButton = new Node('SkillButton');
+    skillButton.addComponent(Button);
+    skillButton.addComponent(SkillButtonController);
+    skillButton.addChild(createLabelNode(Node, Label, 'Label'));
+    actionArea.addChild(skillButton);
+
+    hudLayer.addChild(seatPanels);
+    hudLayer.addChild(centerStage);
+    hudLayer.addChild(actionArea);
+
+    const propertyPrompt = new Node('PropertyPrompt');
+    propertyPrompt.addComponent(PropertyPrompt);
+    propertyPrompt.addChild(createLabelNode(Node, Label, 'TitleLabel'));
+    propertyPrompt.addChild(createLabelNode(Node, Label, 'DistrictLabel'));
+    propertyPrompt.addChild(createLabelNode(Node, Label, 'CostLabel'));
+    propertyPrompt.addChild(createLabelNode(Node, Label, 'ProjectedCashLabel'));
+    propertyPrompt.addChild(createButtonNode(Node, Button, 'BuyButton'));
+    propertyPrompt.addChild(createButtonNode(Node, Button, 'SkipButton'));
+
+    const resultPanel = new Node('ResultPanel');
+    resultPanel.addComponent(ResultPanel);
+    resultPanel.addChild(createLabelNode(Node, Label, 'ResultLabel'));
+
+    const roleSelection = new Node('RoleSelection');
+    roleSelection.addComponent(RoleSelectionController);
+    roleSelection.addChild(createLabelNode(Node, Label, 'TitleLabel'));
+    roleSelection.addChild(new Node('Options'));
+
+    overlayLayer.addChild(propertyPrompt);
+    overlayLayer.addChild(resultPanel);
+    overlayLayer.addChild(roleSelection);
+
+    BOARD_CONFIG.forEach((_tile, index) => {
+      tileLayer.addChild(createTileNode(Node, Label, index));
+    });
+    MATCH_CONFIG.players.forEach((_player, index) => {
+      const token = new Node(`Token${index}`);
+      token.addChild(createLabelNode(Node, Label, 'Label'));
+      tokenLayer.addChild(token);
+    });
+
+    const controller = canvas.addComponent(BattleController);
+
+    (controller as BattleController & { bindScene: () => void }).bindScene();
+
+    expect(backgroundLayer.children.map((child) => child.name)).toEqual(
+      expect.arrayContaining(['MapBackdrop', 'OceanGlow']),
+    );
+    expect(boardDecorLayer.children.map((child) => child.name)).toEqual(
+      expect.arrayContaining(['RouteRing', 'CenterStageFrame', 'CornerLandmark0', 'CornerLandmark1']),
+    );
+    expect(tileLayer.getChildByName('Tile0')?.getChildByName('TileFrame')).toBeTruthy();
+    expect(seatPanels.getChildByName('SeatPanel0')?.getChildByName('PanelFrame')).toBeTruthy();
+    expect(propertyPrompt.getChildByName('PromptFrame')).toBeTruthy();
+    expect(resultPanel.getChildByName('ResultFrame')).toBeTruthy();
+  });
   it('hides unused seat panels and tokens for reduced player-count battle setups', async () => {
     vi.resetModules();
     vi.doMock('cc', () => createCcMock());

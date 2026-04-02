@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Reorient the current `fortune-board` project from an original lightweight MVP into a phased roadmap that can progressively reproduce the core gameplay experience of the Tiantian Fuweng mobile game while keeping protected expressive content original.
+**Goal:** Reorient the current `fortune-board` project from an original lightweight MVP into a phased roadmap that can progressively reproduce the core gameplay and world-map battle-scene experience of the Tiantian Fuweng mobile game while keeping protected expressive content original.
 
-**Architecture:** Keep the current deterministic rules-first Cocos architecture, but treat the existing first-playable loop as a foundation rather than the target product shape. The roadmap should first expand the rules and data model to support a larger map, richer property economy, card and skill interplay, and random-event pressure, then layer in higher-fidelity pacing, UI feedback, and product-shell surfaces without forcing a rewrite of the core match state.
+**Architecture:** Keep the current deterministic rules-first Cocos architecture, but treat the existing first-playable loop as a foundation rather than the target product shape. The roadmap should first expand the rules and data model to support a larger map, richer property economy, card and skill interplay, and random-event pressure, then rebuild the Battle scene toward a near-original world-map surface before later product-shell work, without forcing a rewrite of the core match state.
 
 **Tech Stack:** Cocos Creator 3.8.8, TypeScript, Vitest, npm, Biome, Cocos scene serialization
 
@@ -23,7 +23,7 @@
 
 - The current PRD and early implementation slices were optimized for a small original MVP.
 - The user has now clarified a different target: get as close as practical to the gameplay feel of the Tiantian Fuweng mobile game, delivered in phases.
-- The repository already has useful foundations, but the active delivery order needs to change: gameplay fidelity must lead, while visual polish and product shell work become supporting phases.
+- The repository already has useful foundations, but the active delivery order needs to change: gameplay fidelity must lead, and the world-map Battle scene must be rebuilt as a first-class milestone instead of a late optional polish pass.
 
 ## Scope
 
@@ -32,7 +32,8 @@
 - Reframe the current project roadmap around high-fidelity gameplay recreation
 - Expand the board and match-state model beyond the tiny prototype assumptions
 - Promote cards, skills, random events, and richer economy pacing into the core gameplay milestone
-- Define a later phase for feel tuning, AI improvement, and presentation polish
+- Define a dedicated world-map Battle-scene reconstruction phase
+- Define a later phase for feel tuning, AI improvement, and broader presentation polish
 - Keep all content packaging original where the source material would be protected expression
 
 ### Excluded

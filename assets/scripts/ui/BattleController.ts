@@ -1,4 +1,4 @@
-import { _decorator, Button, Color, Component, Label, Node, tween, UITransform, Vec3 } from 'cc';
+import { _decorator, Button, Color, Component, Graphics, Label, Node, profiler, tween, UITransform, Vec3 } from 'cc';
 
 import { decideCardToPlay } from '../ai/decide-card';
 import { decideSkillToUse } from '../ai/decide-skill';
@@ -102,6 +102,7 @@ export class BattleController extends Component {
 
   // BattleController owns scene wiring, animation, and rendering; rules sequencing belongs in core/.
   start(): void {
+    this.hidePreviewProfiler();
     this.bindScene();
     this.resultPanel?.hide();
     this.propertyPrompt?.hide();
@@ -109,6 +110,14 @@ export class BattleController extends Component {
     this.match = this.match.requiresRoleSelection ? openRoleSelectionFlow(this.match) : beginTurnFlow(this.match);
     this.render();
     this.maybeRunAiFlow();
+  }
+
+  private hidePreviewProfiler(): void {
+    try {
+      profiler.hideStats();
+    } catch {
+      // Preview/runtime shells differ; ignore environments without a profiler bridge.
+    }
   }
 
   public onRollClicked(): void {
@@ -220,6 +229,8 @@ export class BattleController extends Component {
     this.tokenNodes = this.match.players.map((_player, index) =>
       this.getRequiredChild(sceneRoots.tokenLayer, `Token${index}`),
     );
+
+    this.applyWorldMapTheme(sceneRoots, layout.profile, tilePositions);
   }
 
   private getSceneRoots(canvasNode: Node): BattleSceneRoots {
@@ -567,6 +578,269 @@ export class BattleController extends Component {
     controller.hide();
 
     return controller;
+  }
+
+  private applyWorldMapTheme(
+    sceneRoots: BattleSceneRoots,
+    layoutProfile: BattleLayoutProfile,
+    tilePositions: Array<{ x: number; y: number }>,
+  ): void {
+    this.decorateBackgroundLayer(sceneRoots.backgroundLayer);
+    this.decorateBoardDecorLayer(sceneRoots.boardDecorLayer, layoutProfile, tilePositions);
+    this.decorateSeatPanels(this.getRequiredChild(sceneRoots.hudLayer, 'SeatPanels'), layoutProfile);
+    this.decorateCenterStage(this.getRequiredChild(sceneRoots.hudLayer, 'CenterStage'), layoutProfile);
+    this.decorateActionArea(this.getRequiredChild(sceneRoots.hudLayer, 'ActionArea'), layoutProfile);
+    this.decorateTileNodes(layoutProfile);
+    this.decorateTokenNodes();
+    this.decoratePropertyPrompt(this.getRequiredChild(sceneRoots.overlayLayer, 'PropertyPrompt'), layoutProfile);
+    this.decorateResultPanel(this.getRequiredChild(sceneRoots.overlayLayer, 'ResultPanel'), layoutProfile);
+    this.decorateRoleSelection(this.getRequiredChild(sceneRoots.overlayLayer, 'RoleSelection'), layoutProfile);
+  }
+
+  private decorateBackgroundLayer(layer: Node): void {
+    const backdrop = this.ensureGraphicChild(layer, 'MapBackdrop', 1320, 760);
+    this.paintRoundedRect(backdrop, 1320, 760, '#184d72', '#3e7398', 52);
+
+    const oceanGlow = this.ensureGraphicChild(layer, 'OceanGlow', 1060, 560);
+    this.paintDiamond(oceanGlow, 920, 460, '#2c678c', '#7db7d9');
+  }
+
+  private decorateBoardDecorLayer(
+    layer: Node,
+    layoutProfile: BattleLayoutProfile,
+    tilePositions: Array<{ x: number; y: number }>,
+  ): void {
+    const routeRing = this.ensureGraphicChild(layer, 'RouteRing', 920, 620);
+    this.paintRouteRing(routeRing, tilePositions, layoutProfile);
+
+    const centerStageFrame = this.ensureGraphicChild(layer, 'CenterStageFrame', 350, 220);
+    this.paintRoundedRect(centerStageFrame, 350, 220, '#efe8d2', '#c9b37f', 40);
+
+    const landmarkPositions = [
+      { x: -318, y: 204 },
+      { x: 318, y: 204 },
+      { x: 318, y: -204 },
+      { x: -318, y: -204 },
+    ];
+
+    landmarkPositions.forEach((position, index) => {
+      const landmark = this.ensureGraphicChild(layer, `CornerLandmark${index}`, 88, 88);
+      landmark.setPosition(position.x, position.y, 0);
+      this.paintCircleBadge(landmark, 34, ['#ffb74d', '#64b5f6', '#81c784', '#ba68c8'][index] ?? '#ffb74d');
+    });
+  }
+
+  private decorateSeatPanels(root: Node, layoutProfile: BattleLayoutProfile): void {
+    const panelWidth = layoutProfile === 'portrait' ? 172 : 220;
+    const panelHeight = layoutProfile === 'portrait' ? 98 : 112;
+
+    root.children.forEach((panelNode, index) => {
+      const transform = panelNode.getComponent(UITransform) ?? panelNode.addComponent(UITransform);
+      transform.setContentSize(panelWidth, panelHeight);
+
+      const frame = this.ensureGraphicChild(panelNode, 'PanelFrame', panelWidth, panelHeight);
+      this.paintRoundedRect(frame, panelWidth, panelHeight, '#f4ecd6', '#c59d56', 24);
+
+      const titleLabel = this.getRequiredLabel(panelNode, 'TitleLabel');
+      const statsLabel = this.getRequiredLabel(panelNode, 'StatsLabel');
+      const stateLabel = this.getRequiredLabel(panelNode, 'StateLabel');
+
+      titleLabel.node.setPosition(0, 28, 0);
+      statsLabel.node.setPosition(0, -4, 0);
+      stateLabel.node.setPosition(0, -34, 0);
+      titleLabel.fontSize = layoutProfile === 'portrait' ? 18 : 20;
+      statsLabel.fontSize = layoutProfile === 'portrait' ? 14 : 15;
+      stateLabel.fontSize = layoutProfile === 'portrait' ? 13 : 14;
+      titleLabel.color = this.colorFromHex(['#9c5d12', '#155e9a', '#0d6846', '#7f2d93'][index] ?? '#9c5d12');
+      statsLabel.color = this.colorFromHex('#2d3a47');
+      stateLabel.color = this.colorFromHex('#5d4830');
+    });
+  }
+
+  private decorateCenterStage(centerStage: Node, layoutProfile: BattleLayoutProfile): void {
+    const transform = centerStage.getComponent(UITransform) ?? centerStage.addComponent(UITransform);
+    const width = transform.contentSize.width || (layoutProfile === 'portrait' ? 250 : 320);
+    const height = transform.contentSize.height || (layoutProfile === 'portrait' ? 108 : 132);
+    transform.setContentSize(width, height);
+
+    const frame = this.ensureGraphicChild(centerStage, 'StageFrame', width, height);
+    this.paintRoundedRect(frame, width, height, '#fbf3dc', '#c9ab68', 30);
+
+    this.getRequiredLabel(centerStage, 'ActivePlayerLabel').node.setPosition(0, 28, 0);
+    this.getRequiredLabel(centerStage, 'TurnLabel').node.setPosition(0, -4, 0);
+    this.getRequiredLabel(centerStage, 'LatestEventLabel').node.setPosition(0, -36, 0);
+  }
+
+  private decorateActionArea(actionArea: Node, layoutProfile: BattleLayoutProfile): void {
+    const width = layoutProfile === 'portrait' ? 280 : 340;
+    const height = layoutProfile === 'portrait' ? 170 : 182;
+    const frame = this.ensureGraphicChild(actionArea, 'ActionFrame', width, height);
+    frame.setPosition(0, layoutProfile === 'portrait' ? -150 : -170, 0);
+    this.paintRoundedRect(frame, width, height, '#f5efd9', '#bfa26b', 28);
+
+    const logLabel = this.getRequiredLabel(actionArea, 'LogLabel');
+    logLabel.node.setPosition(0, layoutProfile === 'portrait' ? -102 : -112, 0);
+    logLabel.fontSize = layoutProfile === 'portrait' ? 14 : 15;
+
+    const cardHandRoot = this.getRequiredChild(actionArea, 'CardHand');
+    cardHandRoot.setPosition(layoutProfile === 'portrait' ? -60 : -74, layoutProfile === 'portrait' ? -44 : -52, 0);
+    const cardFrame = this.ensureGraphicChild(cardHandRoot, 'CardFrame', layoutProfile === 'portrait' ? 124 : 146, 72);
+    this.paintRoundedRect(cardFrame, layoutProfile === 'portrait' ? 124 : 146, 72, '#fff9ec', '#d1b274', 18);
+
+    const skillButtonRoot = this.getRequiredChild(actionArea, 'SkillButton');
+    skillButtonRoot.setPosition(layoutProfile === 'portrait' ? 76 : 92, layoutProfile === 'portrait' ? -46 : -52, 0);
+    const skillFrame = this.ensureGraphicChild(skillButtonRoot, 'SkillFrame', layoutProfile === 'portrait' ? 110 : 126, 72);
+    this.paintRoundedRect(skillFrame, layoutProfile === 'portrait' ? 110 : 126, 72, '#fff7df', '#c8aa5b', 18);
+  }
+
+  private decorateTileNodes(layoutProfile: BattleLayoutProfile): void {
+    const tileWidth = layoutProfile === 'portrait' ? 108 : 124;
+    const tileHeight = layoutProfile === 'portrait' ? 66 : 74;
+
+    this.tileNodes.forEach((tileNode, index) => {
+      const transform = tileNode.getComponent(UITransform) ?? tileNode.addComponent(UITransform);
+      transform.setContentSize(tileWidth, tileHeight);
+
+      const frame = this.ensureGraphicChild(tileNode, 'TileFrame', tileWidth, tileHeight);
+      this.paintRoundedRect(frame, tileWidth, tileHeight, '#fff8ea', '#d1ac63', 20);
+
+      const titleLabel = this.getRequiredLabel(tileNode, 'TitleLabel');
+      const supportingLabel = this.getRequiredLabel(tileNode, 'SupportingLabel');
+      const badgeLabel = this.getRequiredLabel(tileNode, 'BadgeLabel');
+      titleLabel.node.setPosition(0, 14, 0);
+      supportingLabel.node.setPosition(0, -12, 0);
+      badgeLabel.node.setPosition(0, 32, 0);
+      titleLabel.fontSize = layoutProfile === 'portrait' ? 14 : 15;
+      supportingLabel.fontSize = layoutProfile === 'portrait' ? 11 : 12;
+      badgeLabel.fontSize = layoutProfile === 'portrait' ? 12 : 13;
+      if (index % 2 === 0) {
+        titleLabel.color = this.colorFromHex('#2f4050');
+        supportingLabel.color = this.colorFromHex('#5c6e7d');
+      }
+    });
+  }
+
+  private decorateTokenNodes(): void {
+    this.tokenNodes.forEach((tokenNode, index) => {
+      const badge = this.ensureGraphicChild(tokenNode, 'TokenBadge', 42, 42);
+      this.paintCircleBadge(badge, 18, ['#ef5350', '#42a5f5', '#ffca28', '#ab47bc'][index] ?? '#ef5350');
+
+      const label = tokenNode.getChildByName('Label')?.getComponent(Label) ?? null;
+      if (label) {
+        label.string = this.match.players[index]?.label.replace('Player ', 'P').replace('AI ', 'A') ?? `${index + 1}`;
+        label.fontSize = 12;
+        label.color = this.colorFromHex('#ffffff');
+      }
+    });
+  }
+
+  private decoratePropertyPrompt(root: Node, layoutProfile: BattleLayoutProfile): void {
+    const width = layoutProfile === 'portrait' ? 250 : 320;
+    const height = layoutProfile === 'portrait' ? 190 : 212;
+    const frame = this.ensureGraphicChild(root, 'PromptFrame', width, height);
+    this.paintRoundedRect(frame, width, height, '#fbf5e3', '#cda95b', 28);
+  }
+
+  private decorateResultPanel(root: Node, layoutProfile: BattleLayoutProfile): void {
+    const width = layoutProfile === 'portrait' ? 260 : 336;
+    const height = layoutProfile === 'portrait' ? 158 : 176;
+    const frame = this.ensureGraphicChild(root, 'ResultFrame', width, height);
+    this.paintRoundedRect(frame, width, height, '#fff8e8', '#d1b16a', 28);
+  }
+
+  private decorateRoleSelection(root: Node, layoutProfile: BattleLayoutProfile): void {
+    const width = layoutProfile === 'portrait' ? 280 : 360;
+    const height = layoutProfile === 'portrait' ? 240 : 260;
+    const frame = this.ensureGraphicChild(root, 'RoleSelectionFrame', width, height);
+    this.paintRoundedRect(frame, width, height, '#f9f1dc', '#caa55e', 28);
+  }
+
+  private ensureGraphicChild(parent: Node, name: string, width: number, height: number): Node {
+    let node = parent.getChildByName(name);
+    if (!node) {
+      node = new Node(name);
+      parent.addChild(node);
+    }
+
+    const transform = node.getComponent(UITransform) ?? node.addComponent(UITransform);
+    transform.setContentSize(width, height);
+    if ('setSiblingIndex' in node && typeof (node as Node & { setSiblingIndex?: (index: number) => void }).setSiblingIndex === 'function') {
+      (node as Node & { setSiblingIndex: (index: number) => void }).setSiblingIndex(0);
+    }
+    return node;
+  }
+
+  private ensureGraphics(node: Node): Graphics {
+    return node.getComponent(Graphics) ?? node.addComponent(Graphics);
+  }
+
+  private paintRoundedRect(node: Node, width: number, height: number, fillHex: string, strokeHex: string, radius: number): void {
+    const graphics = this.ensureGraphics(node) as Graphics & {
+      fillColor?: Color;
+      lineWidth?: number;
+      strokeColor?: Color;
+    };
+    graphics.clear();
+    graphics.fillColor = this.colorFromHex(fillHex);
+    graphics.strokeColor = this.colorFromHex(strokeHex);
+    graphics.lineWidth = 4;
+    graphics.roundRect(-width / 2, -height / 2, width, height, radius);
+    graphics.fill();
+    graphics.stroke();
+  }
+
+  private paintDiamond(node: Node, width: number, height: number, fillHex: string, strokeHex: string): void {
+    const graphics = this.ensureGraphics(node) as Graphics & {
+      fillColor?: Color;
+      lineWidth?: number;
+      strokeColor?: Color;
+    };
+    graphics.clear();
+    graphics.fillColor = this.colorFromHex(fillHex);
+    graphics.strokeColor = this.colorFromHex(strokeHex);
+    graphics.lineWidth = 6;
+    graphics.moveTo(-width / 2, 0);
+    graphics.lineTo(0, -height / 2);
+    graphics.lineTo(width / 2, 0);
+    graphics.lineTo(0, height / 2);
+    graphics.lineTo(-width / 2, 0);
+    graphics.fill();
+    graphics.stroke();
+  }
+
+  private paintRouteRing(node: Node, tilePositions: Array<{ x: number; y: number }>, layoutProfile: BattleLayoutProfile): void {
+    const graphics = this.ensureGraphics(node) as Graphics & {
+      lineWidth?: number;
+      strokeColor?: Color;
+    };
+    graphics.clear();
+    graphics.strokeColor = this.colorFromHex(layoutProfile === 'portrait' ? '#f7e0a0' : '#f3d37c');
+    graphics.lineWidth = layoutProfile === 'portrait' ? 22 : 26;
+    const first = tilePositions[0];
+    if (!first) {
+      return;
+    }
+    graphics.moveTo(first.x, first.y);
+    tilePositions.slice(1).forEach((position) => {
+      graphics.lineTo(position.x, position.y);
+    });
+    graphics.lineTo(first.x, first.y);
+    graphics.stroke();
+  }
+
+  private paintCircleBadge(node: Node, radius: number, fillHex: string): void {
+    const graphics = this.ensureGraphics(node) as Graphics & {
+      fillColor?: Color;
+      lineWidth?: number;
+      strokeColor?: Color;
+    };
+    graphics.clear();
+    graphics.fillColor = this.colorFromHex(fillHex);
+    graphics.strokeColor = this.colorFromHex('#fff6dd');
+    graphics.lineWidth = 4;
+    graphics.circle(0, 0, radius);
+    graphics.fill();
+    graphics.stroke();
   }
 
   private getRequiredChild(parent: Node, name: string): Node {
