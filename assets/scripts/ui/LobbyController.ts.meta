@@ -1,0 +1,13 @@
+{
+  "ver": "4.0.24",
+  "importer": "typescript",
+  "imported": true,
+  "uuid": "b5b0e06c-28e7-4990-a3c8-c1b3539b4b9b",
+  "files": [],
+  "subMetas": {},
+  "userData": {
+    "moduleId": "project:///assets/scripts/ui/LobbyController.js",
+    "importerSettings": 7,
+    "simulateGlobals": []
+  }
+}

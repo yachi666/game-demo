@@ -34,17 +34,19 @@ describe('resolveTileForPlayer', () => {
     expect(result.match.properties.find((property) => property.tileId === 'civic-1')?.ownerId).toBeNull();
   });
 
-  it('bankrupts the buyer without granting ownership when a property purchase is unaffordable', () => {
+  it('bankrupts the buyer without granting ownership when a late-loop property purchase is unaffordable', () => {
     const match = createIsolatedMatch();
-    match.players[0].position = 17;
+    const lateLoopPropertyIndex = BOARD_CONFIG.findIndex((tile) => tile.id === 'neon-3');
+    expect(lateLoopPropertyIndex).toBeGreaterThan(-1);
+    match.players[0].position = lateLoopPropertyIndex;
     match.players[0].cash = 200;
 
     const result = resolveTileForPlayer(match, 0, { type: 'buy' });
 
     expect(result.requiresPropertyDecision).toBe(false);
-    expect(result.match.players[0].cash).toBe(-50);
+    expect(result.match.players[0].cash).toBe(-120);
     expect(result.match.players[0].isBankrupt).toBe(true);
-    expect(result.match.properties.find((property) => property.tileId === 'sky-3')?.ownerId).toBeNull();
+    expect(result.match.properties.find((property) => property.tileId === 'neon-3')?.ownerId).toBeNull();
   });
 
   it('releases owned properties when a penalty tile causes bankruptcy', () => {
@@ -215,6 +217,19 @@ describe('resolveTileForPlayer', () => {
     expect(result.requiresPropertyDecision).toBe(false);
     expect(result.match.players[0].cash).toBe(580);
     expect(result.match.logs.at(-1)?.message).toContain('City Festival');
+  });
+
+  it('grants the authored reward on a late-loop reward tile', () => {
+    const match = createIsolatedMatch();
+    const lateLoopRewardIndex = BOARD_CONFIG.findIndex((tile) => tile.id === 'reward-4');
+    expect(lateLoopRewardIndex).toBeGreaterThan(-1);
+    match.players[0].position = lateLoopRewardIndex;
+
+    const result = resolveTileForPlayer(match, 0);
+
+    expect(result.requiresPropertyDecision).toBe(false);
+    expect(result.match.players[0].cash).toBe(540);
+    expect(result.match.logs.at(-1)?.message).toBe('Player 1 gained 140');
   });
 
   it('moves the player when a chance tile resolves to a movement event', () => {

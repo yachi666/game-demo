@@ -7,9 +7,12 @@ const BASE64_KEYS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456
 const BUILTIN_CLASS_ID_RE = /^(?:cc|dragonBones|sp|ccsg)\./;
 const SCRIPT_CLASS_ID_RE = /^[0-9a-f]{5}[A-Za-z0-9+/]{18}$/i;
 
-export const CANONICAL_SCENE_PATH = 'assets/scenes/Battle.scene';
-export const CANONICAL_SCENE_META_PATH = 'assets/scenes/Battle.scene.meta';
-export const CANONICAL_SCENE_UUID = '6d8fa4db-c84c-4c65-9490-29da8a5d74cd';
+export const CANONICAL_SCENE_PATH = 'assets/scenes/Lobby.scene';
+export const CANONICAL_SCENE_META_PATH = 'assets/scenes/Lobby.scene.meta';
+export const CANONICAL_SCENE_UUID = '8f9373fa-06d5-41db-be49-dc9e9903478f';
+export const BATTLE_SCENE_PATH = 'assets/scenes/Battle.scene';
+export const BATTLE_SCENE_META_PATH = 'assets/scenes/Battle.scene.meta';
+export const BATTLE_SCENE_UUID = '6d8fa4db-c84c-4c65-9490-29da8a5d74cd';
 export const BUILD_CONFIG_PATH = 'tools/ci/cocos-build-web-desktop.json';
 export const REQUIRED_BASELINE_PATHS = [
   'package.json',
@@ -18,6 +21,8 @@ export const REQUIRED_BASELINE_PATHS = [
   'settings/v2/packages/engine.json',
   'profiles/v2/packages/scene.json',
   '.creator/default-meta.json',
+  BATTLE_SCENE_PATH,
+  BATTLE_SCENE_META_PATH,
 ];
 
 function resolveRepoPath(rootDir, relativePath) {
@@ -83,7 +88,9 @@ function collectScriptMetaEntries(rootDir, issues) {
     try {
       meta = readJson(filePath);
     } catch (error) {
-      issues.push(`Failed to parse ${path.relative(rootDir, filePath)}: ${error instanceof Error ? error.message : String(error)}`);
+      issues.push(
+        `Failed to parse ${path.relative(rootDir, filePath)}: ${error instanceof Error ? error.message : String(error)}`,
+      );
       continue;
     }
 
@@ -99,7 +106,9 @@ function collectScriptMetaEntries(rootDir, issues) {
         classId: compressScriptUuidToClassId(meta.uuid),
       });
     } catch (error) {
-      issues.push(`Invalid uuid in ${path.relative(rootDir, filePath)}: ${error instanceof Error ? error.message : String(error)}`);
+      issues.push(
+        `Invalid uuid in ${path.relative(rootDir, filePath)}: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 
@@ -109,6 +118,7 @@ function collectScriptMetaEntries(rootDir, issues) {
 function validateBuildConfig(config) {
   const issues = [];
   const expectedSceneUrl = `db://${CANONICAL_SCENE_PATH}`;
+  const expectedBattleSceneUrl = `db://${BATTLE_SCENE_PATH}`;
 
   if (config.platform !== 'web-desktop') {
     issues.push(`Build config platform must be web-desktop, got ${String(config.platform)}`);
@@ -122,9 +132,16 @@ function validateBuildConfig(config) {
   const hasCanonicalScene = scenes.some((scene) => {
     return scene && scene.url === expectedSceneUrl && scene.uuid === CANONICAL_SCENE_UUID;
   });
+  const hasBattleScene = scenes.some((scene) => {
+    return scene && scene.url === expectedBattleSceneUrl && scene.uuid === BATTLE_SCENE_UUID;
+  });
 
   if (!hasCanonicalScene) {
     issues.push(`Build config scenes must include ${expectedSceneUrl} with UUID ${CANONICAL_SCENE_UUID}`);
+  }
+
+  if (!hasBattleScene) {
+    issues.push(`Build config scenes must include ${expectedBattleSceneUrl} with UUID ${BATTLE_SCENE_UUID}`);
   }
 
   if (typeof config.buildPath !== 'string' || config.buildPath.length === 0) {
@@ -169,7 +186,6 @@ export function collectPreflightIssues(rootDir) {
 
   const scenePath = resolveRepoPath(rootDir, CANONICAL_SCENE_PATH);
   const sceneMetaPath = resolveRepoPath(rootDir, CANONICAL_SCENE_META_PATH);
-  const buildConfigPath = resolveRepoPath(rootDir, BUILD_CONFIG_PATH);
 
   let scene;
   try {
@@ -184,7 +200,18 @@ export function collectPreflightIssues(rootDir) {
       issues.push(`${CANONICAL_SCENE_META_PATH} must preserve UUID ${CANONICAL_SCENE_UUID}`);
     }
   } catch (error) {
-    issues.push(`Failed to read ${CANONICAL_SCENE_META_PATH}: ${error instanceof Error ? error.message : String(error)}`);
+    issues.push(
+      `Failed to read ${CANONICAL_SCENE_META_PATH}: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+
+  try {
+    const battleSceneMeta = readJson(resolveRepoPath(rootDir, BATTLE_SCENE_META_PATH));
+    if (battleSceneMeta.uuid !== BATTLE_SCENE_UUID) {
+      issues.push(`${BATTLE_SCENE_META_PATH} must preserve UUID ${BATTLE_SCENE_UUID}`);
+    }
+  } catch (error) {
+    issues.push(`Failed to read ${BATTLE_SCENE_META_PATH}: ${error instanceof Error ? error.message : String(error)}`);
   }
 
   try {
@@ -211,9 +238,7 @@ export function collectPreflightIssues(rootDir) {
 
 export function main(argv = process.argv.slice(2)) {
   const rootArgIndex = argv.indexOf('--root');
-  const rootDir = rootArgIndex >= 0 && argv[rootArgIndex + 1]
-    ? path.resolve(argv[rootArgIndex + 1])
-    : process.cwd();
+  const rootDir = rootArgIndex >= 0 && argv[rootArgIndex + 1] ? path.resolve(argv[rootArgIndex + 1]) : process.cwd();
 
   const issues = collectPreflightIssues(rootDir);
   if (issues.length > 0) {

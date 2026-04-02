@@ -6,9 +6,11 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 import {
+  BATTLE_SCENE_PATH,
+  BATTLE_SCENE_UUID,
+  BUILD_CONFIG_PATH,
   CANONICAL_SCENE_PATH,
   CANONICAL_SCENE_UUID,
-  BUILD_CONFIG_PATH,
   collectPreflightIssues,
   compressScriptUuidToClassId,
   loadBuildConfig,
@@ -28,7 +30,7 @@ describe('compressScriptUuidToClassId', () => {
 });
 
 describe('loadBuildConfig', () => {
-  it('loads the committed web-desktop build contract for Battle.scene', () => {
+  it('loads the committed web-desktop build contract for the lobby shell and battle scene', () => {
     const config = loadBuildConfig(ROOT_DIR);
 
     expect(config.platform).toBe('web-desktop');
@@ -38,6 +40,10 @@ describe('loadBuildConfig', () => {
         expect.objectContaining({
           url: `db://${CANONICAL_SCENE_PATH}`,
           uuid: CANONICAL_SCENE_UUID,
+        }),
+        expect.objectContaining({
+          url: `db://${BATTLE_SCENE_PATH}`,
+          uuid: BATTLE_SCENE_UUID,
         }),
       ]),
     );
@@ -59,6 +65,8 @@ describe('collectPreflightIssues', () => {
       'settings/v2/packages/engine.json',
       'profiles/v2/packages/scene.json',
       '.creator/default-meta.json',
+      'assets/scenes/Lobby.scene',
+      'assets/scenes/Lobby.scene.meta',
       'assets/scenes/Battle.scene',
       'assets/scenes/Battle.scene.meta',
       BUILD_CONFIG_PATH,
@@ -78,9 +86,7 @@ describe('collectPreflightIssues', () => {
 
     expect(() => collectPreflightIssues(tempRoot)).not.toThrow();
     expect(collectPreflightIssues(tempRoot)).toEqual(
-      expect.arrayContaining([
-        expect.stringContaining('assets/scripts/ui/Broken.ts.meta'),
-      ]),
+      expect.arrayContaining([expect.stringContaining('assets/scripts/ui/Broken.ts.meta')]),
     );
   });
 });

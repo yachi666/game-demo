@@ -62,13 +62,16 @@ import fs from 'node:fs';
 
 const [configPath] = process.argv.slice(2);
 const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-const sceneUuid = '6d8fa4db-c84c-4c65-9490-29da8a5d74cd';
-const sceneUrl = 'db://assets/scenes/Battle.scene';
+const lobbySceneUuid = '8f9373fa-06d5-41db-be49-dc9e9903478f';
+const lobbySceneUrl = 'db://assets/scenes/Lobby.scene';
+const battleSceneUuid = '6d8fa4db-c84c-4c65-9490-29da8a5d74cd';
+const battleSceneUrl = 'db://assets/scenes/Battle.scene';
 const scenes = Array.isArray(config.scenes) ? config.scenes : [];
-const hasCanonicalScene = scenes.some((scene) => scene?.uuid === sceneUuid && scene?.url === sceneUrl);
+const hasLobbyScene = scenes.some((scene) => scene?.uuid === lobbySceneUuid && scene?.url === lobbySceneUrl);
+const hasBattleScene = scenes.some((scene) => scene?.uuid === battleSceneUuid && scene?.url === battleSceneUrl);
 
-if (config.startScene !== sceneUuid || !hasCanonicalScene) {
-  console.error('Effective build config no longer targets Battle.scene');
+if (config.startScene !== lobbySceneUuid || !hasLobbyScene || !hasBattleScene) {
+  console.error('Effective build config no longer targets the Lobby shell and Battle scene');
   process.exit(1);
 }
 NODE

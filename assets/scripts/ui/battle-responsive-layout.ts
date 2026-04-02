@@ -24,6 +24,12 @@ export interface BattleViewportSize {
   width: number;
 }
 
+export interface BattleRuntimeLayout {
+  boardScale: number;
+  centerStage: LayoutRect;
+  seatPanelPositions: Array<{ x: number; y: number }>;
+}
+
 function isPositiveFiniteNumber(value: number): boolean {
   return Number.isFinite(value) && value > 0;
 }
@@ -77,5 +83,18 @@ export function getBattleLayoutProfile(viewport: { height: number; width: number
       bottomRight: { x: 176, y: -448 },
       bottomLeft: { x: -176, y: -448 },
     },
+  };
+}
+
+export function getBattleRuntimeLayout(layout: BattleLayoutProfileResult): BattleRuntimeLayout {
+  return {
+    boardScale: layout.boardScale,
+    centerStage: layout.centerStage,
+    seatPanelPositions: [
+      layout.seatPanels.topLeft,
+      layout.seatPanels.topRight,
+      layout.seatPanels.bottomRight,
+      layout.seatPanels.bottomLeft,
+    ],
   };
 }

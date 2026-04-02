@@ -141,12 +141,7 @@ describe('getTilePresentation', () => {
     const match = createMatch(BOARD_CONFIG, MATCH_CONFIG);
     const presentation = getTilePresentation(match, 1);
 
-    expect(Object.keys(presentation).sort()).toEqual([
-      'accentHex',
-      'badgeLabel',
-      'supportingLabel',
-      'title',
-    ]);
+    expect(Object.keys(presentation).sort()).toEqual(['accentHex', 'badgeLabel', 'supportingLabel', 'title']);
   });
 
   it('throws when property ownership points at a missing player', () => {

@@ -1,4 +1,6 @@
-import type { MatchState, TileConfig } from '../core/types';
+import { GamePhase } from '../core/phases';
+import type { CardDefinition, MatchState, TileConfig } from '../core/types';
+import { STARTER_CARD_DEFINITIONS } from '../data/card-config';
 import { ROLE_DEFINITIONS } from '../data/role-config';
 import { getAssetTotal } from '../gameplay/economy';
 import { assertDefined } from '../utils/assert';
@@ -29,6 +31,36 @@ export interface PropertyPromptPresentation {
   districtLabel: string;
   projectedCashLabel: string;
   title: string;
+}
+
+export interface BattleHudRoleOptionPresentation {
+  id: string;
+  label: string;
+  skillLabel: string;
+}
+
+export interface BattleHudCardHandPresentation {
+  cards: CardDefinition[];
+  canPlayCards: boolean;
+  visible: boolean;
+}
+
+export interface BattleHudSkillButtonPresentation {
+  canUseSkill: boolean;
+  label: string | null;
+  visible: boolean;
+}
+
+export interface BattleHudRoleSelectionPresentation {
+  options: BattleHudRoleOptionPresentation[];
+  visible: boolean;
+}
+
+export interface BattleHudFlowPresentation {
+  cardHand: BattleHudCardHandPresentation;
+  roleSelection: BattleHudRoleSelectionPresentation;
+  rollButtonEnabled: boolean;
+  skillButton: BattleHudSkillButtonPresentation;
 }
 
 export function getSeatPanelPresentation(match: MatchState, playerIndex: number): SeatPanelPresentation {
@@ -92,10 +124,7 @@ export function getTilePresentation(match: MatchState, tileIndex: number): TileP
   return getSpecialTilePresentation(tile);
 }
 
-export function getCenterStagePresentation(
-  match: MatchState,
-  profile: BattleLayoutProfile,
-): CenterStagePresentation {
+export function getCenterStagePresentation(match: MatchState, profile: BattleLayoutProfile): CenterStagePresentation {
   const activePlayer = match.players[match.activePlayerIndex]!;
   const latestLogEntry = match.logs[match.logs.length - 1];
   const latestLog = latestLogEntry?.message ?? `Phase: ${match.phase}`;
@@ -133,6 +162,44 @@ export function getPropertyPromptPresentation(
     districtLabel: `District: ${details.district}`,
     costLabel: `Purchase: ${details.purchaseCost}`,
     projectedCashLabel: `Cash After Buy: ${details.projectedCash}`,
+  };
+}
+
+export function getBattleHudFlowPresentation(match: MatchState): BattleHudFlowPresentation {
+  const activePlayer = assertDefined(
+    match.players[match.activePlayerIndex],
+    `Missing active player at index ${match.activePlayerIndex}`,
+  );
+  const isHumanPreRollWindow = activePlayer.isHuman && match.phase === GamePhase.AwaitPreRollActions;
+  const role = ROLE_DEFINITIONS.find((candidate) => candidate.id === activePlayer.roleId) ?? null;
+  const activeCards = activePlayer.hand
+    .map((cardId) => STARTER_CARD_DEFINITIONS.find((card) => card.id === cardId) ?? null)
+    .filter((card): card is CardDefinition => card !== null);
+
+  return {
+    rollButtonEnabled:
+      activePlayer.isHuman && (match.phase === GamePhase.AwaitRoll || match.phase === GamePhase.AwaitPreRollActions),
+    roleSelection: {
+      visible: match.phase === GamePhase.AwaitRoleSelection,
+      options:
+        match.phase === GamePhase.AwaitRoleSelection
+          ? ROLE_DEFINITIONS.filter((candidate) => match.availableRoleIds.includes(candidate.id)).map((candidate) => ({
+              id: candidate.id,
+              label: candidate.label,
+              skillLabel: candidate.skillLabel,
+            }))
+          : [],
+    },
+    cardHand: {
+      visible: isHumanPreRollWindow && activeCards.length > 0,
+      canPlayCards: isHumanPreRollWindow && !activePlayer.hasUsedCardThisTurn,
+      cards: activeCards,
+    },
+    skillButton: {
+      visible: isHumanPreRollWindow && role !== null,
+      canUseSkill: isHumanPreRollWindow && role !== null && !activePlayer.hasUsedSkillThisTurn,
+      label: role?.skillLabel ?? null,
+    },
   };
 }
 

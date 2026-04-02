@@ -3,12 +3,17 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
+    "lint": "biome lint .",
+    "lint:fix": "biome lint --write .",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
     "test": "vitest run --config tests/setup/vitest.config.ts",
     "test:watch": "vitest --config tests/setup/vitest.config.ts",
-    "verify:cocos-preflight": "npm test && node tools/ci/verify-cocos-project.mjs",
+    "verify:cocos-preflight": "npm run lint && npm run format:check && npm test && node tools/ci/verify-cocos-project.mjs",
     "verify:cocos-build": "bash tools/ci/run-cocos-build.sh"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.4.10",
     "typescript": "^5.8.3",
     "vitest": "^3.1.1"
   },

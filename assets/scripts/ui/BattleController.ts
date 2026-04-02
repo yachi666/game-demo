@@ -2,17 +2,22 @@ import { _decorator, Button, Color, Component, Label, Node, tween, UITransform, 
 
 import { decideCardToPlay } from '../ai/decide-card';
 import { decideSkillToUse } from '../ai/decide-skill';
-import { getAiPropertyDecision } from '../ai/decide-turn';
+import { resolveAiLanding } from '../ai/decide-turn';
 import { advancePhase } from '../core/advance-phase';
 import { createMatch } from '../core/create-match';
 import { GamePhase } from '../core/phases';
-import type { MatchState } from '../core/types';
+import {
+  advanceToNextTurnFlow,
+  beginTurnFlow,
+  completeRoleSelectionFlow,
+  finishPreRollActionWindow,
+  openRoleSelectionFlow,
+} from '../core/turn-flow';
+import type { MatchSetupSelection, MatchState } from '../core/types';
 import { BOARD_CONFIG } from '../data/board-config';
-import { STARTER_CARD_DEFINITIONS } from '../data/card-config';
 import { MATCH_CONFIG } from '../data/match-config';
-import { ROLE_DEFINITIONS } from '../data/role-config';
 import { playCardForPlayer } from '../gameplay/cards';
-import { applyCostDiscount, getTileAt } from '../gameplay/economy';
+import { getPropertyPurchaseQuote, getTileAt } from '../gameplay/economy';
 import { applyRollMovementForPlayer } from '../gameplay/movement';
 import { resolveTileForPlayer } from '../gameplay/resolve-tile';
 import { applySkillForPlayer } from '../gameplay/skills';
@@ -24,16 +29,15 @@ import { PropertyPrompt } from './PropertyPrompt';
 import { ResultPanel } from './ResultPanel';
 import { RoleSelectionController } from './RoleSelectionController';
 import { SkillButtonController } from './SkillButtonController';
-import { getTilePresentation } from './battle-presentation';
 import {
-  advanceToNextTurnFlow,
-  beginTurnFlow,
-  completeRoleSelectionFlow,
-  finishPreRollActionWindow,
-  openRoleSelectionFlow,
-} from '../core/turn-flow';
+  applyMatchSetupSelection,
+  getCurrentMatchSetupSelection,
+  setCurrentMatchSetupSelection,
+} from './LobbyController';
 import { createDiamondTrackPositions } from './battle-layout';
-import { getBattleLayoutProfile } from './battle-responsive-layout';
+import { getBattleHudFlowPresentation, getTilePresentation } from './battle-presentation';
+import { getBattleLayoutProfile, getBattleRuntimeLayout } from './battle-responsive-layout';
+import type { BattleLayoutProfile, BattleRuntimeLayout } from './battle-responsive-layout';
 
 const { ccclass, property } = _decorator;
 type ComponentCtor<T extends Component> = new () => T;
@@ -45,6 +49,23 @@ interface BattleSceneRoots {
   tokenLayer: Node;
   hudLayer: Node;
   overlayLayer: Node;
+}
+
+function applyStoredRoleSelection(match: MatchState, selectedRoleId: string | undefined): MatchState {
+  if (!selectedRoleId || !match.availableRoleIds.includes(selectedRoleId)) {
+    return match;
+  }
+
+  return completeRoleSelectionFlow(openRoleSelectionFlow(match), selectedRoleId);
+}
+
+export function createInitialBattleMatch(selection: MatchSetupSelection = getCurrentMatchSetupSelection()): MatchState {
+  const match = createMatch(BOARD_CONFIG, applyMatchSetupSelection(MATCH_CONFIG, selection));
+  return applyStoredRoleSelection(match, selection.selectedRoleId);
+}
+
+function createInitialMatch(): MatchState {
+  return createInitialBattleMatch();
 }
 
 @ccclass('BattleController')
@@ -76,7 +97,7 @@ export class BattleController extends Component {
   @property([Node])
   public tileNodes: Node[] = [];
 
-  private match: MatchState = createMatch(BOARD_CONFIG, MATCH_CONFIG);
+  private match: MatchState = createInitialMatch();
   private resumePreRollAfterPropertyDecision = false;
 
   // BattleController owns scene wiring, animation, and rendering; rules sequencing belongs in core/.
@@ -109,8 +130,12 @@ export class BattleController extends Component {
   }
 
   public onRoleSelected(roleId: string): void {
-    this.match = completeRoleSelectionFlow(this.match, roleId);
-    this.match = beginTurnFlow(this.match);
+    const selectedMatch = completeRoleSelectionFlow(this.match, roleId);
+    setCurrentMatchSetupSelection({
+      ...getCurrentMatchSetupSelection(),
+      selectedRoleId: roleId,
+    });
+    this.match = beginTurnFlow(selectedMatch);
     this.render();
     this.maybeRunAiFlow();
   }
@@ -169,106 +194,148 @@ export class BattleController extends Component {
     const canvasNode = this.getCanvasRoot();
     const viewport = canvasNode.getComponent(UITransform)?.contentSize ?? { width: 960, height: 640 };
     const layout = getBattleLayoutProfile({ width: viewport.width, height: viewport.height });
+    const runtimeLayout = getBattleRuntimeLayout(layout);
+    const sceneRoots = this.getSceneRoots(canvasNode);
 
-    const hudNode = this.getOptionalChild(canvasNode, 'Hud') ?? canvasNode;
-    const boardNode = this.getOptionalChild(canvasNode, 'Board') ?? canvasNode;
-    const tokensNode = this.getOptionalChild(canvasNode, 'Tokens') ?? canvasNode;
-    const overlayNode = this.getOptionalChild(canvasNode, 'Overlay') ?? canvasNode;
+    this.applyResponsiveLayout(sceneRoots, runtimeLayout);
+    this.syncParticipantVisibility(sceneRoots);
+    this.hud = this.bindHud(sceneRoots.hudLayer, layout.profile);
+    this.rollButton = this.bindRollButton(this.getRequiredChild(sceneRoots.hudLayer, 'CenterStage'));
+    this.propertyPrompt = this.bindPropertyPrompt(sceneRoots.overlayLayer, layout.profile);
+    this.resultPanel = this.bindResultPanel(sceneRoots.overlayLayer);
+    this.roleSelection = this.bindRoleSelection(sceneRoots.overlayLayer);
 
-    const hud = this.getOptionalComponent(hudNode, HudController) ?? this.node.addComponent(HudController);
-    hud.activePlayerLabel = this.getOptionalLabel(hudNode, 'ActivePlayerLabel');
-    hud.turnLabel = this.getOptionalLabel(hudNode, 'TurnLabel');
-    hud.latestEventLabel = this.getOptionalLabel(hudNode, 'LatestEventLabel');
-    hud.logLabel = this.getOptionalLabel(hudNode, 'LogLabel');
-    hud.layoutProfile = layout.profile;
-    this.hud = hud;
-
-    const rollButtonNode = this.getOptionalChild(hudNode, 'RollButton');
-    if (rollButtonNode) {
-      const rollButton = rollButtonNode.getComponent(Button);
-      if (rollButton) {
-        this.rollButton = rollButton;
-        rollButton.node.on(Button.EventType.CLICK, this.onRollClicked, this);
-      }
-    }
-
-    const propertyPromptNode = this.getOptionalChild(canvasNode, 'PropertyPrompt');
-    if (propertyPromptNode) {
-      const propertyPrompt = this.getOptionalComponent(propertyPromptNode, PropertyPrompt) ?? propertyPromptNode.addComponent(PropertyPrompt);
-      propertyPrompt.root = propertyPromptNode;
-      propertyPrompt.frameNode = propertyPromptNode;
-      propertyPrompt.titleLabel = this.getOptionalLabel(propertyPromptNode, 'PromptLabel');
-      propertyPrompt.districtLabel = this.getOptionalLabel(propertyPromptNode, 'DistrictLabel');
-      propertyPrompt.costLabel = this.getOptionalLabel(propertyPromptNode, 'CostLabel');
-      propertyPrompt.projectedCashLabel = this.getOptionalLabel(propertyPromptNode, 'ProjectedCashLabel');
-      propertyPrompt.buttonRowNode = propertyPromptNode;
-      propertyPrompt.buyButton = this.getOptionalButton(propertyPromptNode, 'BuyButton');
-      propertyPrompt.skipButton = this.getOptionalButton(propertyPromptNode, 'SkipButton');
-      propertyPrompt.layoutProfile = layout.profile;
-      this.propertyPrompt = propertyPrompt;
-      if (propertyPrompt.buyButton) {
-        propertyPrompt.buyButton.node.on(Button.EventType.CLICK, this.onBuyProperty, this);
-      }
-      if (propertyPrompt.skipButton) {
-        propertyPrompt.skipButton.node.on(Button.EventType.CLICK, this.onSkipProperty, this);
-      }
-    }
-
-    const resultPanelNode = this.getOptionalChild(canvasNode, 'ResultPanel');
-    if (resultPanelNode) {
-      const resultPanel = this.getOptionalComponent(resultPanelNode, ResultPanel) ?? resultPanelNode.addComponent(ResultPanel);
-      resultPanel.root = resultPanelNode;
-      resultPanel.frameNode = resultPanelNode;
-      resultPanel.headlineLabel = this.getOptionalLabel(resultPanelNode, 'ResultLabel');
-      resultPanel.resultLabel = resultPanel.headlineLabel;
-      this.resultPanel = resultPanel;
-    }
+    const actionArea = this.getRequiredChild(sceneRoots.hudLayer, 'ActionArea');
+    this.cardHand = this.bindCardHand(actionArea);
+    this.skillButton = this.bindSkillButton(actionArea);
 
     const tilePositions = createDiamondTrackPositions(BOARD_CONFIG.length, 330, 210);
-    this.tileNodes = BOARD_CONFIG.map((tile, index) => {
-      const tileNode = this.getOptionalChild(boardNode, `Tile${index}`);
-      if (tileNode) {
-        tileNode.setPosition(tilePositions[index]?.x ?? 0, tilePositions[index]?.y ?? 0, 0);
-      }
+    this.tileNodes = BOARD_CONFIG.map((_tile, index) => {
+      const tileNode = this.getRequiredChild(sceneRoots.tileLayer, `Tile${index}`);
+      const tilePosition = tilePositions[index];
+      tileNode.setPosition(tilePosition?.x ?? 0, tilePosition?.y ?? 0, 0);
       return tileNode;
-    }).filter((n): n is Node => n !== null);
+    });
 
-    this.tokenNodes = this.match.players.map((_player, index) => {
-      return this.getOptionalChild(tokensNode, `Token${index}`);
-    }).filter((n): n is Node => n !== null);
-  }
-
-  private getOptionalChild(parent: Node, name: string): Node | null {
-    return parent.children.find(child => child.name === name) ?? null;
-  }
-
-  private getOptionalComponent<T extends Component>(node: Node, ctor: ComponentCtor<T>): T | null {
-    return node.getComponent(ctor);
-  }
-
-  private getOptionalLabel(parent: Node, name: string): Label | null {
-    const node = this.getOptionalChild(parent, name);
-    return node?.getComponent(Label) ?? null;
-  }
-
-  private getOptionalButton(parent: Node, name: string): Button | null {
-    const node = this.getOptionalChild(parent, name);
-    return node?.getComponent(Button) ?? null;
+    this.tokenNodes = this.match.players.map((_player, index) =>
+      this.getRequiredChild(sceneRoots.tokenLayer, `Token${index}`),
+    );
   }
 
   private getSceneRoots(canvasNode: Node): BattleSceneRoots {
     return {
-      backgroundLayer: this.getOptionalChild(canvasNode, 'BackgroundLayer') ?? canvasNode,
-      boardDecorLayer: this.getOptionalChild(canvasNode, 'BoardDecorLayer') ?? canvasNode,
-      tileLayer: this.getOptionalChild(canvasNode, 'TileLayer') ?? this.getRequiredChild(canvasNode, 'Board'),
-      tokenLayer: this.getOptionalChild(canvasNode, 'TokenLayer') ?? this.getRequiredChild(canvasNode, 'Tokens'),
-      hudLayer: this.getOptionalChild(canvasNode, 'HudLayer') ?? this.getRequiredChild(canvasNode, 'Hud'),
-      overlayLayer: this.getOptionalChild(canvasNode, 'OverlayLayer') ?? this.getRequiredChild(canvasNode, 'ResultPanel'),
+      backgroundLayer: this.getRequiredChild(canvasNode, 'BackgroundLayer'),
+      boardDecorLayer: this.getRequiredChild(canvasNode, 'BoardDecorLayer'),
+      tileLayer: this.getRequiredChild(canvasNode, 'TileLayer'),
+      tokenLayer: this.getRequiredChild(canvasNode, 'TokenLayer'),
+      hudLayer: this.getRequiredChild(canvasNode, 'HudLayer'),
+      overlayLayer: this.getRequiredChild(canvasNode, 'OverlayLayer'),
     };
   }
 
-  private getOptionalChild(parent: Node, name: string): Node | null {
-    return parent.children.find(child => child.name === name) ?? null;
+  private applyResponsiveLayout(sceneRoots: BattleSceneRoots, layout: BattleRuntimeLayout): void {
+    [sceneRoots.boardDecorLayer, sceneRoots.tileLayer, sceneRoots.tokenLayer].forEach((layer) => {
+      layer.setScale(layout.boardScale, layout.boardScale, 1);
+    });
+
+    const centerStage = this.getRequiredChild(sceneRoots.hudLayer, 'CenterStage');
+    centerStage.setPosition(layout.centerStage.x, layout.centerStage.y, 0);
+    const centerStageTransform = assertDefined(
+      centerStage.getComponent(UITransform) ?? undefined,
+      `Missing UITransform on node ${centerStage.name}`,
+    );
+    centerStageTransform.setContentSize(layout.centerStage.width, layout.centerStage.height);
+
+    const seatPanelsRoot = this.getRequiredChild(sceneRoots.hudLayer, 'SeatPanels');
+    seatPanelsRoot.setPosition(0, 0, 0);
+    layout.seatPanelPositions.forEach((position, index) => {
+      const seatPanelNode = this.getRequiredChild(seatPanelsRoot, `SeatPanel${index}`);
+      seatPanelNode.setPosition(position.x, position.y, 0);
+    });
+  }
+
+  private syncParticipantVisibility(sceneRoots: BattleSceneRoots): void {
+    const seatPanelsRoot = this.getRequiredChild(sceneRoots.hudLayer, 'SeatPanels');
+    this.syncIndexedNodeVisibility(seatPanelsRoot, 'SeatPanel');
+    this.syncIndexedNodeVisibility(sceneRoots.tokenLayer, 'Token');
+  }
+
+  private syncIndexedNodeVisibility(parent: Node, prefix: string): void {
+    parent.children.forEach((child) => {
+      if (!child.name.startsWith(prefix)) {
+        return;
+      }
+
+      const index = Number.parseInt(child.name.slice(prefix.length), 10);
+      child.active = Number.isInteger(index) && index < this.match.players.length;
+    });
+  }
+
+  private bindHud(root: Node, layoutProfile: BattleLayoutProfile): HudController {
+    const controller = this.getRequiredComponent(root, HudController, 'HudController');
+    const seatPanelsRoot = this.getRequiredChild(root, 'SeatPanels');
+    const centerStage = this.getRequiredChild(root, 'CenterStage');
+    const actionArea = this.getRequiredChild(root, 'ActionArea');
+
+    controller.layoutProfile = layoutProfile;
+    controller.seatPanelNodes = this.match.players.map((_player, index) =>
+      this.getRequiredChild(seatPanelsRoot, `SeatPanel${index}`),
+    );
+    controller.seatPanelTitleLabels = controller.seatPanelNodes.map((panelNode) =>
+      this.getRequiredLabel(panelNode, 'TitleLabel'),
+    );
+    controller.seatPanelStatsLabels = controller.seatPanelNodes.map((panelNode) =>
+      this.getRequiredLabel(panelNode, 'StatsLabel'),
+    );
+    controller.seatPanelStateLabels = controller.seatPanelNodes.map((panelNode) =>
+      this.getRequiredLabel(panelNode, 'StateLabel'),
+    );
+    controller.activePlayerLabel = this.getRequiredLabel(centerStage, 'ActivePlayerLabel');
+    controller.turnLabel = this.getRequiredLabel(centerStage, 'TurnLabel');
+    controller.latestEventLabel = this.getRequiredLabel(centerStage, 'LatestEventLabel');
+    controller.logLabel = this.getRequiredLabel(actionArea, 'LogLabel');
+
+    return controller;
+  }
+
+  private bindRollButton(parent: Node): Button {
+    const button = this.getRequiredButton(parent, 'RollButton');
+    button.node.on(Button.EventType.CLICK, this.onRollClicked, this);
+    return button;
+  }
+
+  private bindPropertyPrompt(parent: Node, layoutProfile: BattleLayoutProfile): PropertyPrompt {
+    const root = this.getRequiredChild(parent, 'PropertyPrompt');
+    const controller = this.getRequiredComponent(root, PropertyPrompt, 'PropertyPrompt');
+
+    controller.root = root;
+    controller.frameNode = root;
+    controller.titleLabel = this.getRequiredLabel(root, 'TitleLabel');
+    controller.districtLabel = this.getRequiredLabel(root, 'DistrictLabel');
+    controller.costLabel = this.getRequiredLabel(root, 'CostLabel');
+    controller.projectedCashLabel = this.getRequiredLabel(root, 'ProjectedCashLabel');
+    controller.buttonRowNode = root;
+    controller.buyButton = this.getRequiredButton(root, 'BuyButton');
+    controller.skipButton = this.getRequiredButton(root, 'SkipButton');
+    controller.layoutProfile = layoutProfile;
+    controller.buyButton.node.on(Button.EventType.CLICK, this.onBuyProperty, this);
+    controller.skipButton.node.on(Button.EventType.CLICK, this.onSkipProperty, this);
+
+    return controller;
+  }
+
+  private bindResultPanel(parent: Node): ResultPanel {
+    const root = this.getRequiredChild(parent, 'ResultPanel');
+    const controller = this.getRequiredComponent(root, ResultPanel, 'ResultPanel');
+    const resultLabel = this.getRequiredLabel(root, 'ResultLabel');
+
+    controller.root = root;
+    controller.frameNode = root;
+    controller.headlineLabel = resultLabel;
+    controller.resultLabel = resultLabel;
+    controller.hide();
+
+    return controller;
   }
 
   private runRoll(value: number): void {
@@ -286,8 +353,9 @@ export class BattleController extends Component {
   private resolveLanding(shouldEndTurnAfterResolution: boolean, onSettled?: () => void): void {
     const activeIndex = this.match.activePlayerIndex;
     const player = this.match.players[activeIndex]!;
-    const aiDecision = player.isHuman ? 'skip' : getAiPropertyDecision(this.match, activeIndex, MATCH_CONFIG.aiReserveCash);
-    const result = resolveTileForPlayer(this.match, activeIndex, { type: aiDecision });
+    const result = player.isHuman
+      ? resolveTileForPlayer(this.match, activeIndex, { type: 'skip' })
+      : resolveAiLanding(this.match, activeIndex, MATCH_CONFIG.aiReserveCash);
     this.match = result.match;
 
     if (result.requiresPropertyDecision && player.isHuman) {
@@ -392,54 +460,39 @@ export class BattleController extends Component {
   }
 
   private getTokenOffset(playerIndex: number): Vec3 {
-    const offsets = [
-      new Vec3(-18, 18, 0),
-      new Vec3(18, 18, 0),
-      new Vec3(-18, -18, 0),
-      new Vec3(18, -18, 0),
-    ];
+    const offsets = [new Vec3(-18, 18, 0), new Vec3(18, 18, 0), new Vec3(-18, -18, 0), new Vec3(18, -18, 0)];
 
     return offsets[playerIndex] ?? new Vec3();
   }
 
   private render(): void {
+    const hudFlow = getBattleHudFlowPresentation(this.match);
+
     if (this.rollButton) {
-      this.rollButton.interactable =
-        (this.match.phase === GamePhase.AwaitRoll || this.match.phase === GamePhase.AwaitPreRollActions) &&
-        this.match.players[this.match.activePlayerIndex]!.isHuman;
+      this.rollButton.interactable = hudFlow.rollButtonEnabled;
     }
 
     if (this.roleSelection) {
-      if (this.match.phase === GamePhase.AwaitRoleSelection) {
-        this.roleSelection.render(
-          ROLE_DEFINITIONS.filter((role) => this.match.availableRoleIds.includes(role.id)).map((role) => ({
-            id: role.id,
-            label: role.label,
-            skillLabel: role.skillLabel,
-          })),
-          (roleId) => this.onRoleSelected(roleId),
-        );
+      if (hudFlow.roleSelection.visible) {
+        this.roleSelection.render(hudFlow.roleSelection.options, (roleId) => this.onRoleSelected(roleId));
       } else {
         this.roleSelection.hide();
       }
     }
 
-    const activePlayer = this.match.players[this.match.activePlayerIndex]!;
-    const activeCards = activePlayer.hand
-      .map((cardId) => STARTER_CARD_DEFINITIONS.find((card) => card.id === cardId) ?? null)
-      .filter((card): card is (typeof STARTER_CARD_DEFINITIONS)[number] => card !== null);
     if (this.cardHand) {
-      if (activePlayer.isHuman && this.match.phase === GamePhase.AwaitPreRollActions) {
-        this.cardHand.render(activeCards, !activePlayer.hasUsedCardThisTurn, (cardId) => this.onPlayCard(cardId));
+      if (hudFlow.cardHand.visible) {
+        this.cardHand.render(hudFlow.cardHand.cards, hudFlow.cardHand.canPlayCards, (cardId) =>
+          this.onPlayCard(cardId),
+        );
       } else {
         this.cardHand.hide();
       }
     }
 
     if (this.skillButton) {
-      const role = ROLE_DEFINITIONS.find((candidate) => candidate.id === activePlayer.roleId);
-      if (activePlayer.isHuman && this.match.phase === GamePhase.AwaitPreRollActions && role) {
-        this.skillButton.render(role.skillLabel, !activePlayer.hasUsedSkillThisTurn, () => this.onUseSkill());
+      if (hudFlow.skillButton.visible && hudFlow.skillButton.label) {
+        this.skillButton.render(hudFlow.skillButton.label, hudFlow.skillButton.canUseSkill, () => this.onUseSkill());
       } else {
         this.skillButton.hide();
       }
@@ -482,42 +535,37 @@ export class BattleController extends Component {
 
   private bindRoleSelection(parent: Node): RoleSelectionController {
     const root = this.getRequiredChild(parent, 'RoleSelection');
-    const transform = this.getRequiredTransform(root);
-    transform.setContentSize(320, 240);
-    root.setPosition(0, 40, 0);
     const controller = this.getRequiredComponent(root, RoleSelectionController, 'RoleSelectionController');
+
     controller.root = root;
     controller.titleLabel = this.getRequiredLabel(root, 'TitleLabel');
     controller.optionsRoot = this.getRequiredChild(root, 'Options');
     controller.hide();
+
     return controller;
   }
 
   private bindCardHand(parent: Node): CardHandController {
     const root = this.getRequiredChild(parent, 'CardHand');
-    const transform = this.getRequiredTransform(root);
-    transform.setContentSize(620, 100);
-    root.setPosition(-120, 6, 0);
     const controller = this.getRequiredComponent(root, CardHandController, 'CardHandController');
+
     controller.root = root;
     controller.titleLabel = this.getRequiredLabel(root, 'TitleLabel');
     controller.cardsRoot = this.getRequiredChild(root, 'Cards');
     controller.hide();
+
     return controller;
   }
 
   private bindSkillButton(parent: Node): SkillButtonController {
     const root = this.getRequiredChild(parent, 'SkillButton');
-    const transform = this.getRequiredTransform(root);
-    transform.setContentSize(220, 40);
-    root.setPosition(226, 0, 0);
-    const button = assertDefined(root.getComponent(Button) ?? undefined, 'Missing Button on SkillButton');
-    button.transition = Button.Transition.NONE;
     const controller = this.getRequiredComponent(root, SkillButtonController, 'SkillButtonController');
+
     controller.root = root;
-    controller.button = button;
+    controller.button = this.getRequiredButton(parent, 'SkillButton');
     controller.label = this.getRequiredLabel(root, 'Label');
     controller.hide();
+
     return controller;
   }
 
@@ -536,10 +584,6 @@ export class BattleController extends Component {
   private getRequiredLabel(parent: Node, name: string): Label {
     const node = this.getRequiredChild(parent, name);
     return assertDefined(node.getComponent(Label) ?? undefined, `Missing Label on node ${name}`);
-  }
-
-  private getRequiredTransform(node: Node): UITransform {
-    return assertDefined(node.getComponent(UITransform) ?? undefined, `Missing UITransform on node ${node.name}`);
   }
 
   private getRequiredButton(parent: Node, name: string): Button {
@@ -577,30 +621,24 @@ export class BattleController extends Component {
       return;
     }
 
-    const discount = this.match.statusEffects.reduce((highestDiscount, effect) => {
-      if (effect.ownerId !== player.id || effect.effectType !== 'discountNextProperty') {
-        return highestDiscount;
-      }
-
-      return Math.max(highestDiscount, effect.amount);
-    }, 0);
-    const purchaseCost = applyCostDiscount(tile.purchaseCost ?? 0, discount);
+    const purchaseQuote = getPropertyPurchaseQuote(this.match, player.id, tile.purchaseCost ?? 0);
     this.propertyPrompt?.render({
       tileName: tile.label,
       district: tile.district ? tile.district.replace(/-/g, ' ') : 'city park',
-      purchaseCost,
-      projectedCash: player.cash - purchaseCost,
+      purchaseCost: purchaseQuote.effectivePurchaseCost,
+      projectedCash: player.cash - purchaseQuote.effectivePurchaseCost,
     });
   }
 
   private colorFromHex(hex: string): Color {
     const normalized = hex.replace('#', '');
-    const value = normalized.length === 3
-      ? normalized
-          .split('')
-          .map((channel) => `${channel}${channel}`)
-          .join('')
-      : normalized;
+    const value =
+      normalized.length === 3
+        ? normalized
+            .split('')
+            .map((channel) => `${channel}${channel}`)
+            .join('')
+        : normalized;
 
     return new Color(
       Number.parseInt(value.slice(0, 2), 16),

@@ -4,7 +4,7 @@ This folder contains product-facing documents that define what we are building a
 
 ## Documents
 
-- [Requirements](./requirements.md): current MVP product requirements for the `fortune-board` project.
+- [Requirements](./requirements.md): current product requirements for the `fortune-board` project, now centered on a phased high-fidelity gameplay recreation route rather than a lightweight original-only MVP.
 
 ## Maintenance Rules
 

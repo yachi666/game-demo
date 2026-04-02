@@ -19,10 +19,7 @@ export class RoleSelectionController extends Component {
   @property(Node)
   public optionsRoot: Node | null = null;
 
-  public render(
-    options: RoleSelectionOption[],
-    onSelect: (roleId: string) => void,
-  ): void {
+  public render(options: RoleSelectionOption[], onSelect: (roleId: string) => void): void {
     if (!this.root || !this.optionsRoot) {
       return;
     }

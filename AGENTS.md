@@ -44,14 +44,24 @@ When creating or updating documents, reason about the document structure before 
 - Keep filenames descriptive and stable so indexes and cross-references remain durable over time.
 
 ## Build, Test, and Development Commands
-There are no project-local build or test commands configured yet. Before opening a feature PR, add and document the commands the Cocos/iOS stack needs. Prefer a small, standard surface such as:
+The repository now has a small project-local command surface:
 
-- a project-open or local development command for the Cocos Creator project
-- an iOS build command for generating a native package or Xcode project
-- `npm run lint` or equivalent TypeScript lint/format checks once JS/TS tooling is added
-- `npm test` or equivalent automated tests for gameplay logic, data validation, or tooling once a test runner exists
+- `npm install` to install JS dependencies
+- `npm run lint` to run repo-local lint checks for supported code/config files
+- `npm run lint:fix` to apply safe lint fixes
+- `npm run format:check` to check formatting for supported code/config files
+- `npm run format` to rewrite supported code/config files
+- `npm test` to run the Vitest suites in `tests/`
+- `npm test -- tests/core/turn-flow.test.ts` to run a single test file
+- `npm run test:watch` for watch mode during gameplay or tooling work
+- `npm run verify:cocos-preflight` to run lint, format checks, tests, and repository verification
+- `npm run verify:cocos-build` to run the authoritative Cocos build smoke
+- `bash tools/create-cocos-project.sh` to refresh the Cocos project baseline from the pinned Cocos template
+- `open -a /Applications/Cocos/Creator/3.8.8/CocosCreator.app "$PWD"` to open the project in Cocos Creator from the repository root
 
-For the current repository state, the most universally useful commands are still `git status` and `git log --oneline`, plus file-level inspection in `docs/`.
+`npm run verify:cocos-build` requires a GUI-capable macOS machine with Cocos Creator `3.8.8` installed at `/Applications/Cocos/Creator/3.8.8/CocosCreator.app`.
+
+Biome is the repo-local linter/formatter for supported TypeScript, `.mjs`, JSON, and JSONC files. Markdown, YAML, shell scripts, and Cocos-managed asset metadata remain outside its scope.
 
 When opening the Cocos project locally, prefer `Cocos Dashboard` over launching `CocosCreator.app` directly so project discovery and editor startup stay aligned with the recommended workflow. The preferred command is:
 
@@ -63,12 +73,12 @@ Use clear, descriptive names and follow the dominant convention of the surroundi
 - UTF-8 files with LF line endings
 - 2 spaces for Markdown, YAML, and JSON
 - 4 spaces for Python if Python is added
-- TypeScript should follow the formatter and lint rules adopted with the first Cocos code contribution
+- TypeScript, `.mjs`, JSON, and JSONC should follow the repo-local Biome rules
 
-For docs and helper scripts, prefer lowercase, descriptive filenames. For Cocos assets and scenes, preserve naming patterns that improve editor readability and asset searchability. Adopt an automatic formatter and linter with the first real code contribution, then commit the config with the change.
+For docs and helper scripts, prefer lowercase, descriptive filenames. For Cocos assets and scenes, preserve naming patterns that improve editor readability and asset searchability. Biome is the repo-local formatter/linter for supported code and config files; keep its config aligned with the workflow when commands change.
 
 ## Testing Guidelines
-No test framework is configured yet. New features should introduce or extend automated tests at the same time as the code. Prefer `tests/` for suite-level coverage and use colocated tests only when the toolchain strongly favors it. Prioritize coverage for deterministic gameplay logic, config validation, and content-processing tools over editor-only glue code. Name tests after the behavior they verify.
+Vitest is configured for deterministic gameplay, AI, CI-wrapper, and tooling tests via `npm test` and `npm run test:watch`. New features should introduce or extend automated tests at the same time as the code. Prefer `tests/` for suite-level coverage and use colocated tests only when the toolchain strongly favors it. Prioritize coverage for deterministic gameplay logic, config validation, and content-processing tools over editor-only glue code. Name tests after the behavior they verify.
 
 ## Commit & Pull Request Guidelines
 The repository history is still minimal, so no strict repository-specific commit convention exists yet. Start with short, imperative commit subjects such as `Add board turn state machine` or `Document Cocos build workflow`.
