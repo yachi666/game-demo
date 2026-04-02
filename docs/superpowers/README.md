@@ -6,21 +6,23 @@ This folder contains validated delivery documents that turn approved product dir
 
 - [Specs Index](./specs/README.md): approved design documents for concrete implementation slices.
 - [Fortune Board City Park Map Rework Design](./specs/2026-03-28-fortune-board-city-park-map-rework-design.md): proposed design for upgrading the Battle scene into a more product-like city-park competition board.
-- [Fortune Board Bright Amusement Map Polish Design](./specs/2026-03-29-fortune-board-bright-amusement-map-polish-design.md): approved design for the next visual pass, shifting the Battle scene to a bright amusement-map look with reusable scenic art and responsive layout behavior.
+- [Fortune Board World Map High-Fidelity Battle Design](./specs/2026-04-02-fortune-board-world-map-high-fidelity-battle-design.md): canonical visual-design spec for rebuilding the Battle scene toward a high-fidelity Tiantian-Fuweng-style world-map match surface.
+- [Fortune Board Bright Amusement Map Polish Design](./specs/2026-03-29-fortune-board-bright-amusement-map-polish-design.md): superseded visual-direction spec from the earlier bright-amusement branch of the project.
 
 ## Plans
 
 - [Plans Index](./plans/README.md): implementation plans created after a spec is approved and reviewed.
 - [Fortune Board High-Fidelity Tiantian Fuweng Roadmap Implementation Plan](./plans/2026-04-01-fortune-board-high-fidelity-tianti-fuweng-roadmap.md): current roadmap for shifting delivery priority toward high-fidelity gameplay recreation, then feel, presentation, and product-shell phases.
+- [Fortune Board World Map High-Fidelity Battle Implementation Plan](./plans/2026-04-02-fortune-board-world-map-high-fidelity-battle.md): canonical execution plan for rebuilding the Battle scene toward a near-original world-map board surface.
 - [Fortune Board City Park Map Rework Implementation Plan](./plans/2026-03-28-fortune-board-city-park-map-rework.md): execution plan for the next Battle-scene presentation and pacing upgrade.
-- [Fortune Board Bright Amusement Map Polish Implementation Plan](./plans/2026-03-29-fortune-board-bright-amusement-map-polish.md): original greenfield plan for the bright-amusement visual pass before the current repo landed in a half-migrated state.
-- [Fortune Board Battle Scene Visual Recovery Implementation Plan](./plans/2026-04-01-fortune-board-battle-scene-visual-recovery.md): recovery plan for finishing the bright-amusement Battle scene from the current repo state.
+- [Fortune Board Bright Amusement Map Polish Implementation Plan](./plans/2026-03-29-fortune-board-bright-amusement-map-polish.md): superseded original greenfield plan from the abandoned bright-amusement direction.
+- [Fortune Board Battle Scene Visual Recovery Implementation Plan](./plans/2026-04-01-fortune-board-battle-scene-visual-recovery.md): superseded recovery plan from the abandoned bright-amusement direction.
 
 ## Current Delivery Surface
 
 - The first playable Fortune Board MVP is implemented in this repository as a runnable Cocos Creator 3.8.8 project baseline with deterministic rules, simple AI, a battle scene, and Vitest-driven gameplay coverage.
 - The Cocos CI verification design is now implemented as a repo-local preflight verifier, an authoritative Cocos build wrapper, and a GitHub Actions workflow for macOS GUI build validation.
-- The current mainline planning direction is the 2026-04-01 high-fidelity roadmap, which treats the existing MVP as a foundation and prioritizes richer gameplay fidelity ahead of visual-only polish and product-shell work.
+- The current mainline delivery direction is high-fidelity recreation of the Tiantian Fuweng play experience, with the world-map Battle scene now treated as a first-class product surface rather than a later optional polish pass.
 
 ## Current CI Verification Contract
 

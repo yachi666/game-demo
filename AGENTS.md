@@ -57,15 +57,15 @@ The repository now has a small project-local command surface:
 - `npm run verify:cocos-preflight` to run lint, format checks, tests, and repository verification
 - `npm run verify:cocos-build` to run the authoritative Cocos build smoke
 - `bash tools/create-cocos-project.sh` to refresh the Cocos project baseline from the pinned Cocos template
-- `open -a /Applications/Cocos/Creator/3.8.8/CocosCreator.app "$PWD"` to open the project in Cocos Creator from the repository root
+- `'/Applications/CocosDashboard.app/Contents/MacOS/CocosDashboard' /Users/lzn/Documents/trae_projects/demo` to open the project through Cocos Dashboard
 
 `npm run verify:cocos-build` requires a GUI-capable macOS machine with Cocos Creator `3.8.8` installed at `/Applications/Cocos/Creator/3.8.8/CocosCreator.app`.
 
 Biome is the repo-local linter/formatter for supported TypeScript, `.mjs`, JSON, and JSONC files. Markdown, YAML, shell scripts, and Cocos-managed asset metadata remain outside its scope.
 
-When opening the Cocos project locally, prefer `Cocos Dashboard` over launching `CocosCreator.app` directly so project discovery and editor startup stay aligned with the recommended workflow. The preferred command is:
+When opening the Cocos project locally, use `Cocos Dashboard` as the default entrypoint so project discovery and editor startup stay aligned with the recommended workflow. Do not launch `CocosCreator.app` directly unless the user explicitly asks for that fallback. Prefer invoking the Dashboard executable directly because `open -a` may fail even when the Dashboard app itself works. The preferred command is:
 
-- `open -a /Applications/CocosDashboard.app /Users/lzn/Documents/trae_projects/demo`
+- `'/Applications/CocosDashboard.app/Contents/MacOS/CocosDashboard' /Users/lzn/Documents/trae_projects/demo`
 
 ## Coding Style & Naming Conventions
 Use clear, descriptive names and follow the dominant convention of the surrounding toolchain. Baseline formatting rules:

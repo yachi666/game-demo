@@ -18,6 +18,7 @@ export const BATTLE_SCENE_NAME = 'Battle';
 export const DEFAULT_MATCH_SETUP_SELECTION: MatchSetupSelection = {
   humanPlayers: 1,
   aiPlayers: 3,
+  selectedRoleId: 'role-economy',
 };
 
 let currentMatchSetupSelection: MatchSetupSelection = { ...DEFAULT_MATCH_SETUP_SELECTION };

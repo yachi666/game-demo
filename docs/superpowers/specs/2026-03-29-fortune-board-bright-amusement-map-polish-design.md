@@ -4,10 +4,16 @@
 
 - Project: `fortune-board`
 - Document type: implementation design spec
-- Status: proposed for implementation planning
+- Status: superseded
 - Date: `2026-03-29`
 - Scope: visual and layout rework of the current `Battle` scene into a bright amusement-park-style product surface with responsive support
-- Related docs: `../../product/requirements.md`, `../../research/tiantian-fuweng-map-references/README.md`, `./2026-03-28-fortune-board-city-park-map-rework-design.md`
+- Related docs: `../../product/requirements.md`, `../../research/tiantian-fuweng-map-references/README.md`, `./2026-03-28-fortune-board-city-park-map-rework-design.md`, `./2026-04-02-fortune-board-world-map-high-fidelity-battle-design.md`
+
+## Status Note
+
+This document is kept only as project history for an abandoned visual direction.
+
+The current mainline visual target is `2026-04-02-fortune-board-world-map-high-fidelity-battle-design.md`, which replaces the bright-amusement approach with a near-original world-map recreation goal.
 
 ## Goal
 

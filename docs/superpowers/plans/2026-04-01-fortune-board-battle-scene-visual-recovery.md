@@ -14,10 +14,16 @@
 
 - Project: `fortune-board`
 - Document type: implementation plan
-- Status: ready for execution
+- Status: superseded
 - Date: `2026-04-01`
 - Depends on: `../specs/2026-03-29-fortune-board-bright-amusement-map-polish-design.md`
-- Related docs: `./2026-03-29-fortune-board-bright-amusement-map-polish.md`, `../../product/requirements.md`
+- Related docs: `./2026-03-29-fortune-board-bright-amusement-map-polish.md`, `./2026-04-02-fortune-board-world-map-high-fidelity-battle.md`, `../../product/requirements.md`
+
+## Status Note
+
+This plan is kept only as project history from the abandoned bright-amusement direction.
+
+The current mainline Battle-scene execution document is `2026-04-02-fortune-board-world-map-high-fidelity-battle.md`.
 
 ## Why This Plan Exists
 
